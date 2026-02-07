@@ -1,0 +1,75 @@
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Navbar */
+.navbar-brand {
+  font-weight: bold;
+  color: #ff5a5f;
+}
+
+/* Cards */
+.card {
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card-img-top {
+  height: 200px;
+  object-fit: cover;
+}
+
+/* Buttons */
+.btn.btn-pink {
+  background-color: #ff5a5f;
+  border-color: #ff5a5f;
+}
+
+.btn-pink:hover {
+  background-color: #ff4146;
+  border-color: #ff4146;
+}
+
+/* Colors */
+.text-primary {
+  color: #ff5a5f !important;
+}
+
+.bg-pink,
+.bg-pink {
+  background-color: #ff5a5f !important;
+}
+
+/* Hover effects */
+.hover-effect {
+  transition: 0.2s;
+}
+
+.hover-effect:hover {
+  color: #ff4146 !important;
+}
+
+/* Footer */
+footer a {
+  transition: 0.2s;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .card-img-top {
+    height: 150px;
+  }
+}
+.sticky-booking {
+  position: sticky;
+  top: 100px; /* below navbar */
+}
+/* For the form container */
+.container,
+.card-body,
+.row {
+  overflow: visible !important;
+}

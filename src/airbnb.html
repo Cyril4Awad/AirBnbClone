@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirStay - Find Your Perfect Getaway</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">AirStay</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Listings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Profile</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <header class="bg-primary text-white text-center py-5">
+        <div class="container">
+            <h1 class="display-4">Find Your Perfect Getaway</h1>
+            <p class="lead">Explore unique stays and experiences around the world</p>
+        </div>
+    </header>
+
+    <main class="container my-5">
+        <section class="mb-5">
+            <h2 class="mb-4">Search for Your Stay</h2>
+            <form class="row g-3">
+                <div class="col-md-4">
+                    <label for="destination" class="form-label">Destination</label>
+                    <input type="text" class="form-control" id="destination" placeholder="Where are you going?">
+                </div>
+                <div class="col-md-3">
+                    <label for="check-in" class="form-label">Check-in</label>
+                    <input type="date" class="form-control" id="check-in">
+                </div>
+                <div class="col-md-3">
+                    <label for="check-out" class="form-label">Check-out</label>
+                    <input type="date" class="form-control" id="check-out">
+                </div>
+                <div class="col-md-2">
+                    <label for="guests" class="form-label">Guests</label>
+                    <input type="number" class="form-control" id="guests" min="1" value="1">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="mb-5">
+            <h2 class="mb-4">Featured Listings</h2>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                <div class="col">
+                    <div class="card h-100">
+                        <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" class="card-img-top" alt="Cozy Cabin">
+                        <div class="card-body">
+                            <h5 class="card-title">Cozy Cabin in the Woods</h5>
+                            <p class="card-text">Experience nature in this charming cabin surrounded by lush forests.</p>
+                            <p class="card-text"><small class="text-muted">$120 / night</small></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card h-100">
+                        <img src="https://images.unsplash.com/photo-1564501049412-61c2a3083791?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1332&q=80" class="card-img-top" alt="Beachfront Villa">
+                        <div class="card-body">
+                            <h5 class="card-title">Luxurious Beachfront Villa</h5>
+                            <p class="card-text">Enjoy stunning ocean views from this modern beachfront property.</p>
+                            <p class="card-text"><small class="text-muted">$350 / night</small></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card h-100">
+                        <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1080&q=80" class="card-img-top" alt="City Apartment">
+                        <div class="card-body">
+                            <h5 class="card-title">Chic City Center Apartment</h5>
+                            <p class="card-text">Stay in the heart of the city in this stylish and convenient apartment.</p>
+                            <p class="card-text"><small class="text-muted">$180 / night</small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5">
+            <h2 class="mb-4">Why Choose AirStay?</h2>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i class="bi bi-house-heart fs-1 text-primary mb-3"></i>
+                            <h5 class="card-title">Unique Stays</h5>
+                            <p class="card-text">Discover one-of-a-kind accommodations for unforgettable experiences.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i class="bi bi-shield-check fs-1 text-primary mb-3"></i>
+                            <h5 class="card-title">Verified Hosts</h5>
+                            <p class="card-text">Book with confidence knowing all our hosts are thoroughly vetted.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <i class="bi bi-headset fs-1 text-primary mb-3"></i>
+                            <h5 class="card-title">24/7 Support</h5>
+                            <p class="card-text">Our dedicated support team is always ready to assist you.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-light py-4">
+        <div class="container text-center">
+            <p>&copy; 2023 AirStay. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
