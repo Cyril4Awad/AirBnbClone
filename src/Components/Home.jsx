@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
 import "../index.css";
 
 function Home() {
@@ -7,42 +9,171 @@ function Home() {
   const [userCount, setUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [listings, setListings] = useState([]);
+  const [bookings, setBookings] = useState([]); // Assuming you have bookings data
   const [searchQuery, setSearchQuery] = useState("");
+  const [checkInDate, setCheckInDate] = useState("");
+  const [checkOutDate, setCheckOutDate] = useState("");
+  const [guests, setGuests] = useState(1);
+  const [favorites, setFavorites] = useState([]);  // Initialize as an empty array
 
-  //converts the string into a user object
+
+
   const user = JSON.parse(localStorage.getItem("currentUser"));
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
-    window.location.reload(); // Refresh to update UI
+    window.location.reload();
   };
 
   const handleViewListing = (listing) => {
     localStorage.setItem("currentListing", JSON.stringify(listing));
     navigate("/view-listing");
   };
+  const handleFavoriteToggle = async (listingId) => {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
-  //getting data from the db.json
-  const fetchLisitngs = async () => {
+    if (currentUser) {
+      // Ensure favorites is always an array
+      const favorites = currentUser.favorites || [];
+
+      const isAlreadyFavorite = favorites.includes(listingId);
+
+      // Toggle Favorite: Add or Remove from favorites
+      if (isAlreadyFavorite) {
+        currentUser.favorites = favorites.filter((id) => id !== listingId);
+      } else {
+        currentUser.favorites.push(listingId);
+      }
+
+      try {
+        // Update the favorites list in the db.json by making a PATCH request
+        const response = await fetch(`http://localhost:8000/users/${currentUser.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            favorites: currentUser.favorites,
+          }),
+        });
+
+        if (response.ok) {
+          // If update is successful, save the updated user back to localStorage
+          localStorage.setItem("currentUser", JSON.stringify(currentUser));
+          setFavorites(currentUser.favorites);  // Update the state to reflect the change
+        } else {
+          console.error("Failed to update favorites");
+        }
+      } catch (error) {
+        console.error("Error updating favorites:", error);
+      }
+    }
+  };
+
+
+
+  useEffect(() => {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (currentUser) {
+      // If favorites is not an array, initialize it as an empty array
+      if (!Array.isArray(currentUser.favorites)) {
+        currentUser.favorites = [];
+        localStorage.setItem("currentUser", JSON.stringify(currentUser)); // Save updated user
+      }
+      setFavorites(currentUser.favorites); // Load favorites into state
+    }
+  }, []);
+
+
+
+  const fetchListings = async () => {
     try {
-      //wait till we get an answer for the fetch
       const res = await fetch("http://localhost:8000/listings");
-      //read the body of the response from res and parses it to an array of objects
       const data = await res.json();
       setListings(data);
       setLoading(false);
     } catch (err) {
-      console.error("Failed to fetch users:", err);
+      console.error("Failed to fetch listings:", err);
       setLoading(false);
     }
   };
+
+  const fetchBookings = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/bookings");
+      const data = await res.json();
+      setBookings(data);
+    } catch (err) {
+      console.error("Failed to fetch bookings:", err);
+    }
+  };
+
   useEffect(() => {
-    fetchLisitngs();
+    fetchListings();
+    fetchBookings();
   }, []);
 
-  const filteredListings = listings.filter((listing) =>
-    listing.country.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  // Function to check if a listing is available for the selected dates
+  const isListingAvailable = (listing) => {
+    return !bookings.some((booking) => {
+      if (booking.listingId === listing.id) {
+        const bookingStartDate = new Date(booking.checkIn);
+        const bookingEndDate = new Date(booking.checkOut);
+        const selectedStartDate = new Date(checkInDate);
+        const selectedEndDate = new Date(checkOutDate);
+
+        // Check if the booking dates overlap with the selected dates
+        return (
+          (selectedStartDate >= bookingStartDate && selectedStartDate <= bookingEndDate) ||
+          (selectedEndDate >= bookingStartDate && selectedEndDate <= bookingEndDate) ||
+          (selectedStartDate <= bookingStartDate && selectedEndDate >= bookingEndDate)
+        );
+      }
+      return false;
+    });
+  };
+
+  // Filter listings based on country, available dates, and guests
+  const filteredListings = listings.filter((listing) => {
+    const isAvailable = isListingAvailable(listing);
+    const isWithinGuestLimit = listing.guests >= guests;
+
+    return (
+      listing.country.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      isAvailable &&
+      isWithinGuestLimit
+    );
+  });
+
+  // Get today's date for disabling past dates
+  const today = new Date().toISOString().split("T")[0]; // Format: "YYYY-MM-DD"
+
+  // Handle Check-In Date Change
+  const handleCheckInChange = (e) => {
+    const newCheckInDate = e.target.value;
+    setCheckInDate(newCheckInDate);
+
+    // Reset the check-out date when the check-in date changes
+    if (newCheckInDate >= checkOutDate) {
+      setCheckOutDate(newCheckInDate); // Reset check-out to the same day as check-in
+    }
+  };
+  // Handle Check-Out Date Change
+  const handleCheckOutChange = (e) => {
+    setCheckOutDate(e.target.value);
+  };
+  const resetSearch = () => {
+    setSearchQuery("");
+    setCheckInDate("");
+    setCheckOutDate("");
+    setGuests(1);
+  };
+  useEffect(() => {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (currentUser) {
+      setFavorites(currentUser.favorites); // Load favorites from localStorage
+    }
+  }, []);
 
   return (
     <>
@@ -52,7 +183,6 @@ function Home() {
             <Link className="navbar-brand fw-bold" to="/">
               testing
             </Link>
-
             <button
               className="navbar-toggler"
               type="button"
@@ -64,24 +194,20 @@ function Home() {
             >
               <span className="navbar-toggler-icon"></span>
             </button>
-
             <div className="collapse navbar-collapse" id="mainNavbar">
               <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-3">
                 {user ? (
                   <>
                     {user.role === "admin" && (
                       <li className="nav-item">
-                        <Link
-                          to="/dashboard"
-                          className="nav-link  hover-effect"
-                        >
+                        <Link to="/dashboard" className="nav-link hover-effect">
                           Dashboard
                         </Link>
                       </li>
                     )}
 
                     <li className="nav-item">
-                      <Link to="/listings" className="nav-link  hover-effect">
+                      <Link to="/listings" className="nav-link hover-effect">
                         Listings
                       </Link>
                     </li>
@@ -91,15 +217,12 @@ function Home() {
                       </Link>
                     </li>
                     <li className="nav-item">
-                      <Link to="/bookings" className="nav-link  hover-effect">
+                      <Link to="/bookings" className="nav-link hover-effect">
                         Bookings
                       </Link>
                     </li>
                     <li className="nav-item">
-                      <Link
-                        to="/add-listing"
-                        className="nav-link  hover-effect"
-                      >
+                      <Link to="/add-listing" className="nav-link hover-effect">
                         Add Listing
                       </Link>
                     </li>
@@ -116,16 +239,13 @@ function Home() {
                 ) : (
                   <>
                     <li className="nav-item">
-                      <Link to="/login" className="nav-link  hover-effect">
+                      <Link to="/login" className="nav-link hover-effect">
                         Login
                       </Link>
                     </li>
 
                     <li className="nav-item">
-                      <Link
-                        to="/registration"
-                        className="btn btn-pink btn-sm hover-effect"
-                      >
+                      <Link to="/registration" className="btn btn-pink btn-sm hover-effect">
                         Register
                       </Link>
                     </li>
@@ -139,18 +259,13 @@ function Home() {
         <header className="bg-pink text-white text-center py-5">
           <div className="container">
             <h1 className="display-4">Find Your Perfect Getaway</h1>
-            <p className="lead">
-              Explore unique stays and experiences around the world
-            </p>
+            <p className="lead">Explore unique stays and experiences around the world</p>
           </div>
         </header>
 
         <section className="container my-5 mb-5">
           <h2 className="mb-4">Search for Your Stay</h2>
-          <form
-            className="row g-3"
-            onSubmit={(e) => e.preventDefault()} // prevent page refresh
-          >
+          <form className="row g-3" onSubmit={(e) => e.preventDefault()}>
             <div className="col-md-4">
               <label htmlFor="destination" className="form-label">
                 Destination (Country)
@@ -161,20 +276,34 @@ function Home() {
                 id="destination"
                 placeholder="Enter country"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)} // <-- bind search
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <div className="col-md-3">
               <label htmlFor="check-in" className="form-label">
                 Check-in
               </label>
-              <input type="date" className="form-control" id="check-in" />
+              <input
+                type="date"
+                className="form-control"
+                id="check-in"
+                value={checkInDate}
+                min={today} // Disable past dates
+                onChange={handleCheckInChange} // Reset check-out date when check-in changes
+              />
             </div>
             <div className="col-md-3">
               <label htmlFor="check-out" className="form-label">
                 Check-out
               </label>
-              <input type="date" className="form-control" id="check-out" />
+              <input
+                type="date"
+                className="form-control"
+                id="check-out"
+                value={checkOutDate}
+                min={checkInDate || today} // Ensure check-out date is at least the check-in date
+                onChange={(e) => setCheckOutDate(e.target.value)}
+              />
             </div>
             <div className="col-md-2">
               <label htmlFor="guests" className="form-label">
@@ -185,72 +314,79 @@ function Home() {
                 className="form-control"
                 id="guests"
                 min="1"
-                value="1"
+                value={guests}
+                onChange={(e) => setGuests(e.target.value)}
               />
             </div>
           </form>
+          <button
+            className="btn btn-secondary mt-3"
+            onClick={resetSearch}
+          >
+            Reset Search
+          </button>
         </section>
 
         <div className="container py-5">
           <h2 className="mb-4">Featured Listings</h2>
           <div className="row row-cols-1 row-cols-md-3 g-4">
-            <div className="col-lg-12">
-              <section className="ftco-section bg-light">
-                <div className="container-fluid px-md-0">
-                  <div className="row ">
-                    {listings.map((listing) => (
-                      <div className="col-lg-4 mb-4" key={listing.id}>
-                        <div className="card h-100">
-                          <img
-                            src={listing.imgUrl}
-                            className="card-img-top"
-                            alt={listing.listingName}
-                            style={{ height: "200px", objectFit: "cover" }}
-                          />
-                          {/* address should go next to name */}
-                          <div className="card-body">
-                            <h5 className="card-title">
-                              {listing.listingName}, {listing.country}
-                            </h5>
+            {filteredListings.length === 0 ? (
+              <div className="col-12">
+                <p>No listings found for the selected criteria.</p>
+              </div>
+            ) : (
+              filteredListings.map((listing) => (
+                <div className="col-lg-4 mb-4" key={listing.id}>
+                  <div className="card h-100">
+                    <img
+                      src={listing.imgUrl}
+                      className="card-img-top"
+                      alt={listing.listingName}
+                      style={{ height: "200px", objectFit: "cover" }}
+                    />
+                    <div className="card-body">
+                      <button
+                        className="btn btn-link position-absolute top-0 end-0 m-2"
+                        onClick={() => handleFavoriteToggle(listing.id)}
+                      >
+                        <i
+                          className={`bi ${favorites.includes(listing.id) ? 'bi-heart-fill' : 'bi-heart'}`}
+                          style={{ fontSize: "1.5rem", color: "red" }}
+                        ></i>
+                      </button>
 
-                            {/* description should go here instead of address */}
-                            <p className="card-text">
-                              {listing.description
-                                ? listing.description.substring(0, 100) +
-                                  (listing.description.length > 100
-                                    ? "..."
-                                    : "")
-                                : ""}
-                            </p>
-                            <p className="card-text">
-                              <small className="text-muted">
-                                ${listing.pricePerNight} / night
-                              </small>
-                            </p>
 
-                            <Link
-                              to="/view-listing"
-                              className="btn btn-pink btn-sm"
-                              onClick={() => handleViewListing(listing)}
-                            >
-                              View details
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+
+                      <h5 className="card-title">
+                        {listing.listingName}, {listing.country}
+                      </h5>
+                      <p className="card-text">
+                        {listing.description
+                          ? listing.description.substring(0, 100) + (listing.description.length > 100 ? "..." : "")
+                          : ""}
+                      </p>
+                      <p className="card-text">
+                        <small className="text-muted">${listing.pricePerNight} / night</small>
+                      </p>
+
+                      <Link
+                        to="/view-listing"
+                        className="btn btn-pink btn-sm"
+                        onClick={() => handleViewListing(listing)}
+                      >
+                        View details
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </section>
-            </div>
+              ))
+            )}
           </div>
         </div>
       </div>
       <footer className="bg-light py-4">
         <div className="container text-center">
-          <p>
-            &copy; {new Date().getFullYear()} AirBnBee. All rights reserved.
-          </p>
+          <p>&copy; {new Date().getFullYear()} AirBnBee. All rights reserved.</p>
         </div>
       </footer>
     </>

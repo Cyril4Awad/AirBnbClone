@@ -25,11 +25,7 @@ function Profile() {
       return;
     }
 
-    // If admin tries to access profile, redirect to dashboard
-    if (loggedUser.role === "admin") {
-      navigate("/dashboard");
-      return;
-    }
+
 
     setUser(loggedUser);
     setFormData({
@@ -250,9 +246,8 @@ function Profile() {
                       <div className="mb-3">
                         <label className="form-label">First Name</label>
                         <input
-                          className={`form-control ${
-                            errors.fname ? "is-invalid" : ""
-                          }`}
+                          className={`form-control ${errors.fname ? "is-invalid" : ""
+                            }`}
                           value={formData.fname}
                           onChange={(e) =>
                             setFormData({ ...formData, fname: e.target.value })
@@ -266,9 +261,8 @@ function Profile() {
                       <div className="mb-3">
                         <label className="form-label">Last Name</label>
                         <input
-                          className={`form-control ${
-                            errors.lname ? "is-invalid" : ""
-                          }`}
+                          className={`form-control ${errors.lname ? "is-invalid" : ""
+                            }`}
                           value={formData.lname}
                           onChange={(e) =>
                             setFormData({ ...formData, lname: e.target.value })
@@ -283,9 +277,8 @@ function Profile() {
                         <label className="form-label">Email</label>
                         <input
                           type="email"
-                          className={`form-control ${
-                            errors.email ? "is-invalid" : ""
-                          }`}
+                          className={`form-control ${errors.email ? "is-invalid" : ""
+                            }`}
                           value={formData.email}
                           onChange={(e) =>
                             setFormData({ ...formData, email: e.target.value })
@@ -302,9 +295,8 @@ function Profile() {
                         </label>
                         <input
                           type="password"
-                          className={`form-control ${
-                            errors.password ? "is-invalid" : ""
-                          }`}
+                          className={`form-control ${errors.password ? "is-invalid" : ""
+                            }`}
                           value={formData.password}
                           onChange={(e) =>
                             setFormData({
@@ -322,7 +314,7 @@ function Profile() {
                       </div>
 
                       <div className="d-flex gap-2">
-                        <button type="submit" className="btn btn-success">
+                        <button type="submit" className="btn btn-pink">
                           Save Changes
                         </button>
                         <button
@@ -337,7 +329,7 @@ function Profile() {
                             });
                             setErrors({});
                           }}
-                          className="btn btn-secondary"
+                          className="btn btn-pink"
                         >
                           Cancel
                         </button>

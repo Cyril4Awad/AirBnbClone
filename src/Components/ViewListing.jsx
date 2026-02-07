@@ -13,13 +13,14 @@ function ViewListing() {
   const [errors, setErrors] = useState({});
   const today = new Date().toISOString().split("T")[0]; // "2026-02-06"
 
-  //converts the string into a user object
+  // Converts the string into a user object
   const user = JSON.parse(localStorage.getItem("currentUser"));
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     window.location.reload(); // Refresh to update UI
   };
+
   useEffect(() => {
     const storedListing = JSON.parse(localStorage.getItem("currentListing"));
 
@@ -63,7 +64,7 @@ function ViewListing() {
     const fetchBookings = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8000/bookings?listingId=${listing.id}`,
+          `http://localhost:8000/bookings?listingId=${listing.id}`
         );
         const data = await res.json();
 
@@ -87,8 +88,6 @@ function ViewListing() {
 
     fetchBookings();
   }, [listing]);
-
-  const [error, setError] = useState("");
 
   const handleBooking = async (e) => {
     e.preventDefault();
@@ -183,6 +182,7 @@ function ViewListing() {
       setError("Failed to make booking. Try again.");
     }
   };
+
   const handleCheckInChange = (e) => {
     const value = e.target.value;
 
@@ -216,12 +216,17 @@ function ViewListing() {
 
     if (conflict.length > 0) {
       alert(
-        "Some of the selected dates are already booked. Please choose other dates.",
+        "Some of the selected dates are already booked. Please choose other dates."
       );
       return;
     }
 
     setFormData({ ...formData, checkOut: value });
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
   };
 
   if (loading || !listing) {
@@ -332,6 +337,7 @@ function ViewListing() {
                 </p>
 
                 {/* Description */}
+                <p className="text-muted">Description:</p>
                 <p className="mb-4">{listing.description}</p>
 
                 {/* Info Row */}
@@ -342,7 +348,20 @@ function ViewListing() {
                   <span>{listing.size} m²</span>
                 </div>
 
+                <h5>Amenities</h5>
+                <ul>
+                  {listing.wifi && <li>WiFi</li>}
+                  {listing.parking && <li>Parking</li>}
+                  {listing.airConditioning && <li>Air Conditioning</li>}
+                  {listing.kitchen && <li>Kitchen</li>}
+                </ul>
+
                 <hr />
+
+                {/* Listing Creation Date */}
+                <p>
+                  <strong>Created on:</strong> {formatDate(listing.createdAt)}
+                </p>
 
                 {/* Price */}
                 <div className="d-flex justify-content-between align-items-center mt-3">
@@ -364,10 +383,9 @@ function ViewListing() {
           </div>
 
           {/* Booking Form */}
-
-          <div className="col-lg-4">
-            <div className="sticky-booking card shadow-lg border-0">
-              <div className="card-body bg-white text-white">
+          <div className="col-lg-5">
+            <div className="card shadow-lg border-0">
+              <div className="card-body">
                 <h3 className="mb-4 text-dark">Book Your Getaway</h3>
                 <form onSubmit={handleBooking}>
                   <div className="mb-3">
@@ -387,18 +405,22 @@ function ViewListing() {
                   <div className="row mb-3">
                     <div className="col-md-6 mb-2 mb-md-0">
                       <DatePicker
-                        selected={
-                          formData.checkIn ? new Date(formData.checkIn) : null
-                        }
-                        onChange={(date) =>
+                        selected={formData.checkIn ? new Date(formData.checkIn + 'T00:00:00') : null}
+                        onChange={(date) => {
+                          // Format date locally instead of using ISO
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          const localDate = `${year}-${month}-${day}`;
+
                           setFormData({
                             ...formData,
-                            checkIn: date.toISOString().split("T")[0],
+                            checkIn: localDate,
                             checkOut: "", // reset checkout when checkin changes
-                          })
-                        }
-                        minDate={new Date()} // no past dates
-                        excludeDates={bookedDates.map((d) => new Date(d))} // disable booked dates
+                          });
+                        }}
+                        minDate={new Date()}
+                        excludeDates={bookedDates.map((d) => new Date(d + 'T00:00:00'))}
                         placeholderText="Check-in"
                         className={`form-control ${errors.checkIn ? "is-invalid" : ""}`}
                       />
@@ -409,21 +431,20 @@ function ViewListing() {
 
                     <div className="col-md-6">
                       <DatePicker
-                        selected={
-                          formData.checkOut ? new Date(formData.checkOut) : null
-                        }
-                        onChange={(date) =>
+                        selected={formData.checkOut ? new Date(formData.checkOut + 'T00:00:00') : null}
+                        onChange={(date) => {
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          const localDate = `${year}-${month}-${day}`;
+
                           setFormData({
                             ...formData,
-                            checkOut: date.toISOString().split("T")[0],
-                          })
-                        }
-                        minDate={
-                          formData.checkIn
-                            ? new Date(formData.checkIn)
-                            : new Date()
-                        }
-                        excludeDates={bookedDates.map((d) => new Date(d))}
+                            checkOut: localDate,
+                          });
+                        }}
+                        minDate={formData.checkIn ? new Date(formData.checkIn + 'T00:00:00') : new Date()}
+                        excludeDates={bookedDates.map((d) => new Date(d + 'T00:00:00'))}
                         placeholderText="Check-out"
                         className={`form-control ${errors.checkOut ? "is-invalid" : ""}`}
                       />
