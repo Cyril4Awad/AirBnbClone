@@ -16,6 +16,7 @@ function Listings() {
     localStorage.setItem("currentListing", JSON.stringify(listing));
     navigate("/view-listing");
   };
+
   const fetchListings = async () => {
     try {
       const res = await fetch("http://localhost:8000/listings");
@@ -40,16 +41,33 @@ function Listings() {
     }
 
     try {
+      // Step 1: Delete the listing
       await fetch(`http://localhost:8000/listings/${listing.id}`, {
         method: "DELETE",
       });
-      fetchListings(); // refresh list
-      alert("Listing deleted successfully!");
+
+      // Step 2: Get all bookings related to the deleted listing
+      const resBookings = await fetch(`http://localhost:8000/bookings?listingId=${listing.id}`);
+      const bookingsData = await resBookings.json();
+
+      // Step 3: Delete each booking related to the listing
+      for (const booking of bookingsData) {
+        await fetch(`http://localhost:8000/bookings/${booking.id}`, {
+          method: "DELETE",
+        });
+      }
+
+      // Step 4: Refresh the listings after deletion
+      fetchListings(); // This will fetch the updated listings
+
+      alert("Listing and associated bookings deleted successfully!");
     } catch (err) {
-      console.error(err);
-      alert("Failed to delete listing");
+      console.error("Error deleting listing and bookings:", err);
+      alert("Failed to delete listing and related bookings.");
     }
   };
+
+
   return (
     <>
       <div className="min-vh-100 bg-light">

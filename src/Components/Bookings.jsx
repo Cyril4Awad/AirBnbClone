@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../index.css";
+
 function Bookings() {
   const [listings, setListings] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -11,6 +12,12 @@ function Bookings() {
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     window.location.reload(); // Refresh to update UI
+  };
+  const handleViewListing = (listing) => {
+    // Save the selected listing to localStorage
+    localStorage.setItem("currentListing", JSON.stringify(listing));
+    // Navigate to the view-listing page
+    navigate("/view-listing");
   };
 
   const fetchBookings = async () => {
@@ -23,7 +30,7 @@ function Bookings() {
         (booking) => String(booking.userId) === String(user.id),
       );
 
-      //fetch listing info for each booking
+      // Fetch listing info for each booking
       const resListings = await fetch("http://localhost:8000/listings");
       const listingsData = await resListings.json();
 
@@ -35,14 +42,17 @@ function Bookings() {
       });
 
       setBookings(bookingsWithListing);
+      setLoading(false);
     } catch (err) {
       console.error("Failed to fetch bookings:", err);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchBookings();
   }, []);
+
   const handleDeleteBooking = async (booking) => {
     if (!window.confirm("Are you sure you want to delete this booking?")) {
       return;
@@ -56,9 +66,10 @@ function Bookings() {
       alert("Booking deleted successfully!");
     } catch (err) {
       console.error(err);
-      alert("Failed to delete user");
+      alert("Failed to delete booking");
     }
   };
+
   return (
     <>
       <div className="min-vh-100 bg-light">
@@ -85,23 +96,20 @@ function Bookings() {
                 {user ? (
                   <>
                     <li className="nav-item">
-                      <Link to="/" className="nav-link  hover-effect">
+                      <Link to="/" className="nav-link hover-effect">
                         Home
                       </Link>
                     </li>
                     {user.role === "admin" && (
                       <li className="nav-item">
-                        <Link
-                          to="/dashboard"
-                          className="nav-link  hover-effect"
-                        >
+                        <Link to="/dashboard" className="nav-link hover-effect">
                           Dashboard
                         </Link>
                       </li>
                     )}
 
                     <li className="nav-item">
-                      <Link to="/listings" className="nav-link  hover-effect">
+                      <Link to="/listings" className="nav-link hover-effect">
                         Listings
                       </Link>
                     </li>
@@ -112,10 +120,7 @@ function Bookings() {
                     </li>
 
                     <li className="nav-item">
-                      <Link
-                        to="/add-listing"
-                        className="nav-link  hover-effect"
-                      >
+                      <Link to="/add-listing" className="nav-link hover-effect">
                         Add Listing
                       </Link>
                     </li>
@@ -140,15 +145,18 @@ function Bookings() {
         <div className="container py-5">
           <div className="row">
             <h2 className="mb-4">Your Bookings</h2>
-            {bookings.length === 0 && (
-              <p className="text-center">You have no bookings yet.</p>
-            )}
 
-            {bookings.map((booking) => (
-              <div className="col-lg-6 mb-4" key={booking.id}>
-                <div className="card shadow-sm">
-                  {booking.listing ? (
-                    <>
+            {/* If there are no bookings */}
+            {bookings.length === 0 ? (
+              <p className="text-center py-5">You have no bookings yet.</p>
+            ) : (
+              bookings.map((booking) => {
+                // If the listing doesn't exist for this booking, skip it
+                if (!booking.listing) return null;
+
+                return (
+                  <div className="col-lg-6 mb-4" key={booking.id}>
+                    <div className="card shadow-sm">
                       <img
                         src={booking.listing.imgUrl}
                         className="card-img-top"
@@ -157,24 +165,20 @@ function Bookings() {
                       />
                       <div className="card-body">
                         <h5 className="card-title">
-                          {booking.listing.listingName},{" "}
-                          {booking.listing.country}
+                          {booking.listing.listingName}, {booking.listing.country}
                         </h5>
                         <ul className="list-unstyled">
                           <li>
                             <strong>Address:</strong> {booking.listing.address}
                           </li>
-
                           <li>
                             <strong>Size:</strong> {booking.listing.size} m²
                           </li>
                           <li>
-                            <strong>Bedrooms:</strong>{" "}
-                            {booking.listing.bedrooms}
+                            <strong>Bedrooms:</strong> {booking.listing.bedrooms}
                           </li>
                           <li>
-                            <strong>Price:</strong> ${" "}
-                            {booking.listing.pricePerNight}
+                            <strong>Price:</strong> ${booking.listing.pricePerNight} / night
                           </li>
                           <li>
                             <strong>Check-in:</strong> {booking.checkIn}
@@ -188,7 +192,18 @@ function Bookings() {
                           <li>
                             <strong>Phone:</strong> {booking.phoneNumber}
                           </li>
+                          <li>
+                            <strong>Created on:</strong> {new Date(booking.createdAt).toLocaleDateString()}
+                          </li>
+
                         </ul>
+                        <Link
+                          className="btn btn-pink btn-sm m-2"
+                          to="/view-listing"
+                          onClick={() => handleViewListing(booking.listing)}
+                        >
+                          View Details
+                        </Link>
                         <button
                           className="btn btn-pink btn-sm"
                           onClick={() => handleDeleteBooking(booking)}
@@ -196,26 +211,22 @@ function Bookings() {
                           Delete Booking
                         </button>
                       </div>
-                    </>
-                  ) : (
-                    <p className="text-center p-3">
-                      Listing not found for this booking.
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
+
       <footer className="bg-light py-4">
         <div className="container text-center">
-          <p>
-            &copy; {new Date().getFullYear()} AirBnBee. All rights reserved.
-          </p>
+          <p>&copy; {new Date().getFullYear()} AirBnBee. All rights reserved.</p>
         </div>
       </footer>
     </>
   );
 }
+
 export default Bookings;

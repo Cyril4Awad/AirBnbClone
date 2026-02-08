@@ -166,6 +166,7 @@ function ViewListing() {
         ...formData,
         userId: user.id,
         listingId: listing.id,
+        createdAt: new Date().toISOString(),
       };
 
       await fetch("http://localhost:8000/bookings", {

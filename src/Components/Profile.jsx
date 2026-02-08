@@ -53,6 +53,7 @@ function Profile() {
     let validationErrors = {};
     if (!formData.fname) validationErrors.fname = "First name is required";
     if (!formData.lname) validationErrors.lname = "Last name is required";
+    if (!formData.phone) validationErrors.phone = "Phone number is required";
     if (!formData.email) {
       validationErrors.email = "Email is required";
     } else if (
@@ -81,6 +82,7 @@ function Profile() {
         ...currentUserData,
         fname: formData.fname,
         lname: formData.lname,
+        phone:formData.phone,
         ...(formData.email !== user.email && { email: formData.email }),
         ...(formData.password && { password: formData.password }),
       };
@@ -224,6 +226,9 @@ function Profile() {
                         <strong>Last Name:</strong> {user.lname}
                       </div>
                       <div className="mb-3">
+                        <strong>Phone Number:</strong> {user.phone}
+                      </div>
+                      <div className="mb-3">
                         <strong>Email:</strong> {user.email}
                       </div>
                       <div className="mb-3">
@@ -270,6 +275,20 @@ function Profile() {
                         />
                         {errors.lname && (
                           <div className="invalid-feedback">{errors.lname}</div>
+                        )}
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label">Phone Number</label>
+                        <input
+                          className={`form-control ${errors.phone ? "is-invalid" : ""
+                            }`}
+                          value={formData.phone}
+                          onChange={(e) =>
+                            setFormData({ ...formData, phone: e.target.value })
+                          }
+                        />
+                        {errors.phone && (
+                          <div className="invalid-feedback">{errors.phone}</div>
                         )}
                       </div>
 

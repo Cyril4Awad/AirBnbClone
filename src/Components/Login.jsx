@@ -108,7 +108,7 @@ function Login() {
                       setFormData({ ...formData, password: e.target.value })
                     }
                   />
-                  <button className="btn btn-success w-100 mb-3">Log in</button>
+                  <button className="btn btn-pink w-100 mb-3">Log in</button>
 
                   <div className="text-center">
                     <span>Don't have an account? </span>

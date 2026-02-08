@@ -53,13 +53,64 @@ function AddListing() {
   const handleImage = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, imgUrl: reader.result }));
+      // Clear previous error
+      setErrors(prev => ({ ...prev, imgUrl: '' }));
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Calculate new dimensions (max 800x600)
+        let { width, height } = img;
+        const maxWidth = 800;
+        const maxHeight = 600;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Start with high quality and reduce until size is acceptable
+        let quality = 0.8;
+        let compressedDataUrl;
+        let attempts = 0;
+
+        const compress = () => {
+          compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          const sizeInBytes = compressedDataUrl.length * 0.75; // Approximate base64 to bytes
+
+          if (sizeInBytes > 90000 && quality > 0.1 && attempts < 10) {
+            quality -= 0.1;
+            attempts++;
+            compress();
+          } else {
+            setFormData((prev) => ({
+              ...prev,
+              imgUrl: compressedDataUrl
+            }));
+          }
+        };
+
+        compress();
       };
-      reader.readAsDataURL(file);
+
+      img.src = URL.createObjectURL(file);
     }
   };
+
+
 
   const handleMapClick = (e) => {
     setFormData((prev) => ({
@@ -141,18 +192,8 @@ function AddListing() {
         createdAt: new Date().toISOString(),
       };
 
-      await fetch("http://localhost:8000/listings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newListing),
-      });
-
-      alert("Listing created successfully!");
-      navigate("/listings");
-    } catch (err) {
-      console.error(err);
-      setErrors({ general: "Failed to create listing" });
-    } finally {
+      const response = await fetch("http://localhost:8000/listings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newListing), }); console.log('Response status:', response.status); console.log('Response headers:', response.headers); if (!response.ok) { const errorText = await response.text(); console.log('Error response:', errorText); throw new Error(`HTTP ${response.status}: ${errorText}`); } const result = await response.json(); console.log('Success result:', result); alert("Listing created successfully!"); navigate("/listings");
+    } catch (err) { console.error('Full error:', err); setErrors({ general: err.message || "Failed to create listing" }); } finally {
       setLoading(false);
     }
   };
@@ -482,9 +523,8 @@ function AddListing() {
                     <input
                       type="text"
                       name="listingName"
-                      className={`form-control ${
-                        errors.listingName ? "is-invalid" : ""
-                      }`}
+                      className={`form-control ${errors.listingName ? "is-invalid" : ""
+                        }`}
                       value={formData.listingName}
                       onChange={handleChange}
                     />

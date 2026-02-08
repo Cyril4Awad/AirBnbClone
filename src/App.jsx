@@ -4,12 +4,13 @@ import Login from "./Components/Login";
 import Dashboard from "./Components/Dashboard";
 import Home from "./Components/Home";
 import ProtectedRoute from "./Components/ProtectedRoute";
-import RandomPage from "./Components/RandomPage";
+import UserBookings from "./Components/UserBookings";
 import Bookings from "./Components/Bookings";
 import Listings from "./Components/Listings";
 import Profile from "./Components/Profile";
 import AddListing from "./Components/AddListing";
 import ViewListing from "./Components/ViewListing";
+import UserListings from "./Components/UserListings";
 
 function App() {
   return (
@@ -17,7 +18,7 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/registration" element={<Registration />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/random-page" element={<RandomPage />} />
+
       <Route
         path="/dashboard"
         element={
@@ -42,6 +43,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/user-listings/:userId" element={<UserListings />} />
       <Route
         path="/profile"
         element={
@@ -50,7 +52,9 @@ function App() {
           </ProtectedRoute>
         }
       />
-       <Route
+      <Route path="/user-bookings/:userId" element={<UserBookings />} />
+
+      <Route
         path="/add-listing"
         element={
           <ProtectedRoute>

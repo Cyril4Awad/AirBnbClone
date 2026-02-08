@@ -70,6 +70,10 @@ function Home() {
     }
   };
 
+  useEffect(() => {
+    fetchListings();
+    fetchBookings();
+  }, []);
 
 
   useEffect(() => {
@@ -108,10 +112,6 @@ function Home() {
     }
   };
 
-  useEffect(() => {
-    fetchListings();
-    fetchBookings();
-  }, []);
 
   // Function to check if a listing is available for the selected dates
   const isListingAvailable = (listing) => {
@@ -134,16 +134,20 @@ function Home() {
   };
 
   // Filter listings based on country, available dates, and guests
+
   const filteredListings = listings.filter((listing) => {
+    // Only apply filtering when the user has entered criteria
     const isAvailable = isListingAvailable(listing);
     const isWithinGuestLimit = listing.guests >= guests;
 
+    // Check if the listing matches the search criteria
     return (
       listing.country.toLowerCase().includes(searchQuery.toLowerCase()) &&
       isAvailable &&
       isWithinGuestLimit
     );
   });
+
 
   // Get today's date for disabling past dates
   const today = new Date().toISOString().split("T")[0]; // Format: "YYYY-MM-DD"
