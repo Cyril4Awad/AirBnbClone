@@ -40,7 +40,7 @@ function Listings() {
             return {
               ...listing,
               images: images, // array of images
-              imgUrl: images.length > 0 ? images[0].ImageUrl : "", // first image
+              imgUrl: images.length > 0 ? images[0].imageUrl : "", // first image
             };
           } catch (err) {
             console.error(
@@ -110,7 +110,7 @@ function Listings() {
               <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-3">
                 {user ? (
                   <>
-                    {user.role === "admin" && (
+                    {user.role == 1 && (
                       <li className="nav-item">
                         <Link
                           to="/dashboard"
@@ -176,7 +176,7 @@ function Listings() {
                         <div className="col-lg-4 mb-4" key={listing.id}>
                           <div className="card h-100">
                             <img
-                              src={listing.imageUrl}
+                              src={listing.imgUrl}
                               className="card-img-top"
                               alt={listing.listingName}
                               style={{ height: "200px", objectFit: "cover" }}

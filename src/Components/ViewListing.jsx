@@ -120,7 +120,7 @@ function ViewListing() {
       const todayDate = new Date();
       todayDate.setHours(0, 0, 0, 0); // remove time part
 
-      if (checkInDate > checkOutDate) {
+      if (checkOutDate <= checkInDate) {
         validationErrors.checkOut =
           "Check-out date must be after check-in date";
       }
@@ -174,8 +174,6 @@ function ViewListing() {
         CheckIn: formData.checkIn + "T00:00:00",
         CheckOut: formData.checkOut + "T00:00:00",
       };
-
-      console.log("Booking data:", newBooking);
 
       const res = await fetch(`${BASE_URL}/bookings`, {
         method: "POST",
@@ -341,7 +339,9 @@ function ViewListing() {
                 <p className="text-muted mb-2">
                   Hosted by{" "}
                   <strong>
-                    {host ? `${host.firstName} ${host.lastName}` : "Loading host..."}
+                    {host
+                      ? `${host.firstName} ${host.lastName}`
+                      : "Loading host..."}
                   </strong>
                 </p>
 
@@ -475,7 +475,15 @@ function ViewListing() {
                         }}
                         minDate={
                           formData.checkIn
-                            ? new Date(formData.checkIn + "T00:00:00")
+                            ? new Date(
+                                new Date(
+                                  formData.checkIn + "T00:00:00",
+                                ).setDate(
+                                  new Date(
+                                    formData.checkIn + "T00:00:00",
+                                  ).getDate() + 1,
+                                ),
+                              )
                             : new Date()
                         }
                         excludeDates={bookedDates.map(

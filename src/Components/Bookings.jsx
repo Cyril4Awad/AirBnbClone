@@ -28,7 +28,7 @@ function Bookings() {
 
       // Only current user's bookings
       const userBookings = data.filter(
-        (booking) => Number(booking.userId) === Number(user.id),
+        (booking) => Number(booking.userId) == Number(user.id),
       );
 
       // Fetch listing info for each booking
@@ -37,7 +37,7 @@ function Bookings() {
 
       const bookingsWithListing = userBookings.map((booking) => {
         const listing = listingsData.find(
-          (l) => Number(l.id) === Number(booking.listingId),
+          (l) => Number(l.id) == Number(booking.listingId),
         );
         return { ...booking, listing };
       });

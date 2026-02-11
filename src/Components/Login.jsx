@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Loading from "./Loading";
 import { BASE_URL } from "../api";
+import bcrypt from "bcryptjs";
 
 function Login() {
   const navigate = useNavigate();
@@ -27,25 +28,33 @@ function Login() {
     }
 
     setErrors(validationErrors);
-
     if (Object.keys(validationErrors).length === 0) {
       try {
-        // Fetch all users from the API
         const res = await fetch(`${BASE_URL}/users`);
         const users = await res.json();
-        console.log(users);
-        //check to see if it matches any of the users
-       const user = users.find(
-  (u) =>
-    u.email && 
-    u.email.toLowerCase() === formData.email.toLowerCase() &&
-    u.passwordHash === formData.password
-);
 
+        let user = null;
 
-        //setting the user who logged in as a currentUser to use it later
+        // Find user by email first
+        for (const u of users) {
+          if (
+            u.email &&
+            u.email.toLowerCase() === formData.email.toLowerCase()
+          ) {
+            // Compare password asynchronously
+            const isMatch = await bcrypt.compare(
+              formData.password,
+              u.passwordHash,
+            );
+            if (isMatch) {
+              user = u;
+              break;
+            }
+          }
+        }
+
         if (user) {
-          const { password, ...userWithoutPassword } = user;
+          const { passwordHash, ...userWithoutPassword } = user;
           localStorage.setItem(
             "currentUser",
             JSON.stringify(userWithoutPassword),

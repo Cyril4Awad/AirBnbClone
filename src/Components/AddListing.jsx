@@ -213,8 +213,8 @@ function AddListing() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            listingId: listingId, // must match ListingId
-            imageUrl: formData.imgUrl, // must match ImageUrl
+            ListingId: listingId, // must match ListingId
+            ImageUrl: formData.imgUrl, // must match ImageUrl
           }),
         });
 

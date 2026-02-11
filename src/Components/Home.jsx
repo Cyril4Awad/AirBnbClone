@@ -30,42 +30,36 @@ function Home() {
   };
   const handleFavoriteToggle = async (listingId) => {
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser) return;
 
-    if (currentUser) {
-      // Ensure favorites is always an array
-      const favorites = currentUser.favorites || [];
+    const isFavorite = favorites.includes(listingId);
 
-      const isAlreadyFavorite = favorites.includes(listingId);
-
-      // Toggle Favorite: Add or Remove from favorites
-      if (isAlreadyFavorite) {
-        currentUser.favorites = favorites.filter((id) => id !== listingId);
-      } else {
-        currentUser.favorites.push(listingId);
-      }
-
-      try {
-        // Update the favorites list in the db.json by making a PATCH request
-        const response = await fetch(`${BASE_URL}/users/${currentUser.id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
+    try {
+      if (isFavorite) {
+        // REMOVE
+        await fetch(
+          `${BASE_URL}/userfavorites/${Number(currentUser.id)}/${Number(listingId)}`,
+          {
+            method: "DELETE",
           },
+        );
+
+        setFavorites(favorites.filter((id) => id !== listingId));
+      } else {
+        // ADD
+        await fetch(`${BASE_URL}/userfavorites`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            favorites: currentUser.favorites,
+            userId: Number(currentUser.id),
+            listingId: Number(listingId),
           }),
         });
 
-        if (response.ok) {
-          // If update is successful, save the updated user back to localStorage
-          localStorage.setItem("currentUser", JSON.stringify(currentUser));
-          setFavorites(currentUser.favorites); // Update the state to reflect the change
-        } else {
-          console.error("Failed to update favorites");
-        }
-      } catch (error) {
-        console.error("Error updating favorites:", error);
+        setFavorites([...favorites, listingId]);
       }
+    } catch (error) {
+      console.error("Failed to update favorites:", error);
     }
   };
 
@@ -75,15 +69,25 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (currentUser) {
-      // If favorites is not an array, initialize it as an empty array
-      if (!Array.isArray(currentUser.favorites)) {
-        currentUser.favorites = [];
-        localStorage.setItem("currentUser", JSON.stringify(currentUser)); // Save updated user
+    const fetchFavorites = async () => {
+      if (!user) return;
+
+      try {
+        const res = await fetch(`${BASE_URL}/userfavorites`);
+        const data = await res.json();
+
+        // Filter only current user's favorites
+        const userFavorites = data
+          .filter((f) => f.userId === user.id)
+          .map((f) => f.listingId);
+
+        setFavorites(userFavorites);
+      } catch (err) {
+        console.error("Failed to fetch user favorites:", err);
       }
-      setFavorites(currentUser.favorites); // Load favorites into state
-    }
+    };
+
+    fetchFavorites();
   }, []);
 
   const fetchListings = async () => {
@@ -205,7 +209,6 @@ function Home() {
 
   return (
     <>
-      {console.log(filteredListings)}
       <div className="min-vh-100 bg-light">
         <nav className="navbar navbar-expand-lg navbar-light bg-light sticky-top">
           <div className="container">
@@ -227,7 +230,7 @@ function Home() {
               <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-3">
                 {user ? (
                   <>
-                    {user.role === "admin" && (
+                    {user.role === 1 && (
                       <li className="nav-item">
                         <Link to="/dashboard" className="nav-link hover-effect">
                           Dashboard

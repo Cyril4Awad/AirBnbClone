@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import Loading from "./Loading";
 import { BASE_URL } from "../api";
+import bcrypt from 'bcryptjs';
 
 function Registration() {
   const navigate = useNavigate();
@@ -84,11 +85,13 @@ function Registration() {
         const birthYear = new Date().getFullYear() - parseInt(age);
         const dateOfBirth = new Date(birthYear, 0, 1);
 
+        const hashedPassword = bcrypt.hashSync(rest.password,10 );
+
         const userData = {
           FirstName: rest.fname,
           LastName: rest.lname,
           Email: rest.email,
-          PasswordHash: rest.password.trim(),
+          PasswordHash: hashedPassword,
           PhoneNumber: rest.phone || null,
           CountryCode: rest.countryCode || null,
           DateOfBirth: dateOfBirth,

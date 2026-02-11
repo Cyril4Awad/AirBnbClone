@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Loading from "./Loading";
-import {BASE_URL} from "../api";
+import { BASE_URL } from "../api";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -12,20 +12,19 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [editFormData, setEditFormData] = useState({
-    fname: "",
-    lname: "",
-    email: "",
+    FirstName: "",
+    LastName: "",
+    Email: "",
   });
+
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUserData, setNewUserData] = useState({
-    fname: "",
-    lname: "",
-    email: "",
-    password: "",
-    role: "user",
+    FirstName: "",
+    LastName: "",
+    Email: "",
+    PasswordHash: "",
+    Role: 0,
   });
-  const [addUserErrors, setAddUserErrors] = useState({});
-
   useEffect(() => {
     // Check if user is logged in
     const loggedUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -36,7 +35,7 @@ function Dashboard() {
     }
 
     // Only admins can access dashboard
-    if (loggedUser.role !== "admin") {
+    if (loggedUser.role !== 1) {
       alert("Access denied! Admins only.");
       navigate("/profile");
       return;
@@ -47,6 +46,7 @@ function Dashboard() {
     fetchListings();
     fetchBookings();
   }, [navigate]);
+  const [addUserErrors, setAddUserErrors] = useState({});
 
   const handleViewUserListings = (userId) => {
     navigate(`/user-listings/${userId}`);
@@ -95,9 +95,9 @@ function Dashboard() {
   const handleStartEdit = (user) => {
     setEditingUser(user);
     setEditFormData({
-      fname: user.fname,
-      lname: user.lname,
-      email: user.email,
+      FirstName: user.FirstName,
+      LastName: user.LastName,
+      Email: user.Email,
     });
   };
 
@@ -107,7 +107,11 @@ function Dashboard() {
   };
 
   const handleSaveEdit = async (userId) => {
-    if (!editFormData.fname || !editFormData.lname || !editFormData.email) {
+    if (
+      !editFormData.FirstName ||
+      !editFormData.LastName ||
+      !editFormData.Email
+    ) {
       alert("All fields are required");
       return;
     }
@@ -137,17 +141,17 @@ function Dashboard() {
 
     // Validation
     let errors = {};
-    if (!newUserData.fname) errors.fname = "First name is required";
-    if (!newUserData.lname) errors.lname = "Last name is required";
-    if (!newUserData.email) {
-      errors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(newUserData.email)) {
-      errors.email = "Invalid email format";
+    if (!newUserData.FirstName) errors.FirstName = "First name is required";
+    if (!newUserData.LastName) errors.LastName = "Last name is required";
+    if (!newUserData.Email) {
+      errors.Email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(newUserData.Email)) {
+      errors.Email = "Invalid email format";
     }
-    if (!newUserData.password) {
-      errors.password = "Password is required";
-    } else if (newUserData.password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
+    if (!newUserData.PasswordHash) {
+      errors.PasswordHash = "Password is required";
+    } else if (newUserData.PasswordHash.length < 6) {
+      errors.PasswordHash = "Password must be at least 6 characters";
     }
 
     if (Object.keys(errors).length > 0) {
@@ -157,11 +161,11 @@ function Dashboard() {
 
     try {
       // Check if email already exists
-      const res = await fetch("http://localhost:8000/users");
+      const res = await fetch(`${BASE_URL}/users`);
       const existingUsers = await res.json();
 
       const emailExists = existingUsers.some(
-        (u) => u.email === newUserData.email,
+        (u) => u.Email === newUserData.Email,
       );
 
       if (emailExists) {
@@ -170,7 +174,7 @@ function Dashboard() {
       }
 
       // Add new user
-      await fetch("http://localhost:8000/users", {
+      await fetch(`${BASE_URL}/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUserData),
@@ -182,7 +186,7 @@ function Dashboard() {
         lname: "",
         email: "",
         password: "",
-        role: "user",
+        role: 0,
       });
       setShowAddUser(false);
       fetchUsers();
@@ -253,7 +257,7 @@ function Dashboard() {
         <div className="container">
           <span className="navbar-brand">
             <i className="bi bi-shield-lock"></i> Admin Dashboard - Welcome,{" "}
-            {user.fname}
+            {user.firstName}
           </span>
           <div className="d-flex gap-2">
             <Link to="/" className="btn btn-light btn-sm">
@@ -269,9 +273,12 @@ function Dashboard() {
       <div className="container py-5">
         <div className="row mb-4">
           <div className="col">
-            <h2 className="mb-0">User Management</h2>
-            <p className="text-muted">Total Users: {users.length}</p>
+            <h2 className="mb-2">User Management</h2>
+            <p className="text-muted mb-0">Total Users: {users.length}</p>
+            <p className="text-muted mb-0">Total Listings: {listings.length}</p>
+            <p className="text-muted mb-0">Total Bookings: {bookings.length}</p>
           </div>
+
           <div className="col-auto">
             <button
               onClick={() => setShowAddUser(!showAddUser)}
@@ -297,11 +304,11 @@ function Dashboard() {
                       className={`form-control ${
                         addUserErrors.fname ? "is-invalid" : ""
                       }`}
-                      value={newUserData.fname}
+                      value={newUserData.FirstName}
                       onChange={(e) =>
                         setNewUserData({
                           ...newUserData,
-                          fname: e.target.value,
+                          FirstName: e.target.value,
                         })
                       }
                       placeholder="Enter first name"
@@ -318,11 +325,11 @@ function Dashboard() {
                       className={`form-control ${
                         addUserErrors.lname ? "is-invalid" : ""
                       }`}
-                      value={newUserData.lname}
+                      value={newUserData.LastName}
                       onChange={(e) =>
                         setNewUserData({
                           ...newUserData,
-                          lname: e.target.value,
+                          LastName: e.target.value,
                         })
                       }
                       placeholder="Enter last name"
@@ -342,11 +349,11 @@ function Dashboard() {
                       className={`form-control ${
                         addUserErrors.email ? "is-invalid" : ""
                       }`}
-                      value={newUserData.email}
+                      value={newUserData.Email}
                       onChange={(e) =>
                         setNewUserData({
                           ...newUserData,
-                          email: e.target.value,
+                          Email: e.target.value,
                         })
                       }
                       placeholder="Enter email"
@@ -364,11 +371,11 @@ function Dashboard() {
                       className={`form-control ${
                         addUserErrors.password ? "is-invalid" : ""
                       }`}
-                      value={newUserData.password}
+                      value={newUserData.PasswordHash}
                       onChange={(e) =>
                         setNewUserData({
                           ...newUserData,
-                          password: e.target.value,
+                          PasswordHash: e.target.value,
                         })
                       }
                       placeholder="Enter password (min 6 characters)"
@@ -385,13 +392,13 @@ function Dashboard() {
                     <label className="form-label">Select Role *</label>
                     <select
                       className="form-select"
-                      value={newUserData.role}
+                      value={newUserData.Role}
                       onChange={(e) =>
-                        setNewUserData({ ...newUserData, role: e.target.value })
+                        setNewUserData({ ...newUserData, Role: e.target.value })
                       }
                     >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
+                      <option value="0">User</option>
+                      <option value="1">Admin</option>
                     </select>
                   </div>
                 </div>
@@ -404,12 +411,13 @@ function Dashboard() {
                     onClick={() => {
                       setShowAddUser(false);
                       setNewUserData({
-                        fname: "",
-                        lname: "",
-                        email: "",
-                        password: "",
-                        role: "user",
+                        FirstName: "",
+                        LastName: "",
+                        Email: "",
+                        PasswordHash: "",
+                        Role: 0,
                       });
+
                       setAddUserErrors({});
                     }}
                     className="btn btn-secondary"
@@ -450,12 +458,12 @@ function Dashboard() {
                             onChange={(e) =>
                               setEditFormData({
                                 ...editFormData,
-                                fname: e.target.value,
+                                FirstName: e.target.value,
                               })
                             }
                           />
                         ) : (
-                          u.fname
+                          u.firstName
                         )}
                       </td>
                       <td>
@@ -466,12 +474,12 @@ function Dashboard() {
                             onChange={(e) =>
                               setEditFormData({
                                 ...editFormData,
-                                lname: e.target.value,
+                                LastName: e.target.value,
                               })
                             }
                           />
                         ) : (
-                          u.lname
+                          u.lastName
                         )}
                       </td>
                       <td>
@@ -483,7 +491,7 @@ function Dashboard() {
                             onChange={(e) =>
                               setEditFormData({
                                 ...editFormData,
-                                email: e.target.value,
+                                Email: e.target.value,
                               })
                             }
                           />
@@ -494,7 +502,7 @@ function Dashboard() {
                       <td>
                         <span
                           className={`badge ${
-                            u.role === "admin" ? "bg-pink" : "bg-pink"
+                            u.role === 1 ? "bg-pink" : "bg-pink"
                           }`}
                         >
                           {u.role}
@@ -528,15 +536,12 @@ function Dashboard() {
                             </button>
                             <button
                               onClick={() => {
-                                const newRole =
-                                  u.role === "admin" ? "user" : "admin";
+                                const newRole = u.role == 1 ? 0 : 1;
                                 handleEditUser(u.id, { role: newRole });
                               }}
                               className="btn btn-sm btn-pink"
                             >
-                              {u.role === "admin"
-                                ? "Remove Admin"
-                                : "Make Admin"}
+                              {u.role === 1 ? "Remove Admin" : "Make Admin"}
                             </button>
                             <button
                               onClick={() => handleViewUserListings(u.id)}
