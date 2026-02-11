@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Loading from "./Loading";
+import { BASE_URL } from "../api";
 
 function Login() {
   const navigate = useNavigate();
@@ -30,43 +31,47 @@ function Login() {
     if (Object.keys(validationErrors).length === 0) {
       try {
         // Fetch all users from the API
-        const res = await fetch("http://localhost:8000/users");
+        const res = await fetch(`${BASE_URL}/users`);
         const users = await res.json();
+        console.log(users);
         //check to see if it matches any of the users
-        const user = users.find(
-          (u) => u.email === formData.email && u.password === formData.password
-        );
+       const user = users.find(
+  (u) =>
+    u.email && 
+    u.email.toLowerCase() === formData.email.toLowerCase() &&
+    u.passwordHash === formData.password
+);
 
-          //setting the user who logged in as a currentUser to use it later
+
+        //setting the user who logged in as a currentUser to use it later
         if (user) {
           const { password, ...userWithoutPassword } = user;
-          localStorage.setItem("currentUser", JSON.stringify(userWithoutPassword));
+          localStorage.setItem(
+            "currentUser",
+            JSON.stringify(userWithoutPassword),
+          );
 
           setIsLoading(true);
 
-
-          if (user.role === "admin") {
+          if (user.role === 1) {
             navigate("/dashboard");
-          }
-          else {
+          } else {
             setTimeout(() => {
               navigate("/");
             }, 1000);
-
           }
-
-
-
         } else {
           setError("Invalid email or password");
         }
       } catch (err) {
         console.error(err);
-        setError("Failed to connect to server. Make sure json-server is running.");
+        setError(
+          "Failed to connect to server. Make sure json-server is running.",
+        );
       }
     }
   };
-//loading while still in login page waiting for the timeout
+  //loading while still in login page waiting for the timeout
   if (isLoading) {
     return <Loading message="Loading your page..." />;
   }
@@ -79,7 +84,7 @@ function Login() {
             <div className="card shadow-lg border-0 rounded-4">
               <div className="card-body p-5">
                 <h3 className="text-center mb-4">Login</h3>
-              {/* writing all the erros occured in the form */}
+                {/* writing all the erros occured in the form */}
                 {Object.keys(errors).length > 0 && (
                   <div className="alert alert-danger">
                     {Object.values(errors).map((err, i) => (

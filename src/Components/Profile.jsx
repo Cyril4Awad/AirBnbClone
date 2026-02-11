@@ -1,43 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Loading from "./Loading";
-import "../index.css";
+import { BASE_URL } from "../api";
+
 function Profile() {
   const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({
-    fname: "",
-    lname: "",
-    email: "",
-    password: "",
-  });
+  const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
 
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+    passwordHash: "",
+  });
+
+  // Load user from localStorage
   useEffect(() => {
-    // Check if user is logged in
     const loggedUser = JSON.parse(localStorage.getItem("currentUser"));
     if (!loggedUser) {
-      alert("Please login first!");
       navigate("/login");
       return;
     }
 
-
-
     setUser(loggedUser);
     setFormData({
-      fname: loggedUser.fname,
-      lname: loggedUser.lname,
-      email: loggedUser.email,
-      password: loggedUser.password,
+      firstName: loggedUser.firstName || "",
+      lastName: loggedUser.lastName || "",
+      email: loggedUser.email || "",
+      phoneNumber: loggedUser.phoneNumber || "",
+      passwordHash: "",
     });
 
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
+    setIsLoading(false);
   }, [navigate]);
 
   const handleLogout = () => {
@@ -50,325 +50,242 @@ function Profile() {
     setErrors({});
     setSuccessMessage("");
 
-    let validationErrors = {};
-    if (!formData.fname) validationErrors.fname = "First name is required";
-    if (!formData.lname) validationErrors.lname = "Last name is required";
-    if (!formData.phone) validationErrors.phone = "Phone number is required";
-    if (!formData.email) {
-      validationErrors.email = "Email is required";
-    } else if (
-      formData.email !== user.email &&
-      !/\S+@\S+\.\S+/.test(formData.email)
-    ) {
-      validationErrors.email = "Invalid email format";
-    }
-
-    if (formData.password && formData.password.length < 6) {
-      validationErrors.password = "Password must be at least 6 characters";
-    }
+    // Validation
+    const validationErrors = {};
+    if (!formData.firstName)
+      validationErrors.firstName = "First name is required";
+    if (!formData.lastName) validationErrors.lastName = "Last name is required";
+    if (!formData.email) validationErrors.email = "Email is required";
+    if (!formData.phoneNumber)
+      validationErrors.phoneNumber = "Phone number is required";
+    if (formData.passwordHash && formData.passwordHash.length < 6)
+      validationErrors.passwordHash = "Password must be at least 6 characters";
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
+    const updatedData = {
+      id: user.id,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phoneNumber: formData.phoneNumber,
+      email: formData.email,
+      // Only include passwordHash if user typed a new password
+      ...(formData.passwordHash ? { passwordHash: formData.passwordHash } : {}),
+    };
+
+    // send password ONLY if filled
+    if (formData.passwordHash) {
+      updatedData.passwordHash = formData.passwordHash;
+    }
+
     try {
-      // Fetch current user data from db
-      const res = await fetch(`http://localhost:8000/users/${user.id}`);
-      const currentUserData = await res.json();
-
-      // Update user data
-      const updatedData = {
-        ...currentUserData,
-        fname: formData.fname,
-        lname: formData.lname,
-        phone:formData.phone,
-        ...(formData.email !== user.email && { email: formData.email }),
-        ...(formData.password && { password: formData.password }),
-      };
-
-      await fetch(`http://localhost:8000/users/${user.id}`, {
+      const response = await fetch(`${BASE_URL}/users/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),
       });
 
-      // Update localStorage
-      const { password, ...userWithoutPassword } = updatedData;
-      localStorage.setItem("currentUser", JSON.stringify(userWithoutPassword));
-      setUser(userWithoutPassword);
+      if (!response.ok) throw new Error("Update failed");
 
-      setSuccessMessage("Profile updated successfully!");
+      // Update UI + storage
+      const updatedUser = { ...user, ...updatedData };
+      delete updatedUser.passwordHash;
+
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+      setUser(updatedUser);
       setEditMode(false);
-      setFormData({ ...formData, password: "" });
+      setSuccessMessage("Profile updated successfully!");
+
+      setFormData({
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        phoneNumber: updatedUser.phoneNumber,
+        passwordHash: "",
+      });
     } catch (err) {
       console.error(err);
       setErrors({ general: "Failed to update profile" });
     }
   };
 
-  if (isLoading || !user) {
-    return <Loading message="Loading profile..." />;
-  }
+  if (isLoading || !user) return <Loading message="Loading profile..." />;
 
   return (
-    <>
-      <div className="min-vh-100 bg-light">
-        <nav className="navbar navbar-expand-lg navbar-light bg-light sticky-top">
-          <div className="container">
-            <Link className="navbar-brand fw-bold" to="/">
-              testing
-            </Link>
+    <div className="min-vh-100 bg-light">
+      <nav className="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+        <div className="container">
+          <Link className="navbar-brand fw-bold" to="/">
+            testing
+          </Link>
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNavbar"
+            aria-controls="mainNavbar"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
 
-            <button
-              className="navbar-toggler"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#mainNavbar"
-              aria-controls="mainNavbar"
-              aria-expanded="false"
-              aria-label="Toggle navigation"
-            >
-              <span className="navbar-toggler-icon"></span>
-            </button>
-
-            <div className="collapse navbar-collapse" id="mainNavbar">
-              <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-3">
-                {user ? (
-                  <>
+          <div className="collapse navbar-collapse" id="mainNavbar">
+            <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-3">
+              {user ? (
+                <>
+                  <li className="nav-item">
+                    <Link to="/" className="nav-link hover-effect">
+                      Home
+                    </Link>
+                  </li>
+                  {user.role === "admin" && (
                     <li className="nav-item">
-                      <Link to="/" className="nav-link hover-effect">
-                        Home
+                      <Link to="/dashboard" className="nav-link hover-effect">
+                        Dashboard
                       </Link>
                     </li>
-                    {user.role === "admin" && (
-                      <li className="nav-item">
-                        <Link to="/dashboard" className="nav-link hover-effect">
-                          Dashboard
-                        </Link>
-                      </li>
-                    )}
-
-                    <li className="nav-item">
-                      <Link to="/listings" className="nav-link  hover-effect">
-                        Listings
-                      </Link>
-                    </li>
-
-                    <li className="nav-item">
-                      <Link to="/bookings" className="nav-link  hover-effect">
-                        Bookings
-                      </Link>
-                    </li>
-                    <li className="nav-item">
-                      <Link
-                        to="/add-listing"
-                        className="nav-link  hover-effect"
-                      >
-                        Add Listing
-                      </Link>
-                    </li>
-
-                    <li className="nav-item">
-                      <button
-                        onClick={handleLogout}
-                        className="btn btn-pink btn-sm hover-effect"
-                      >
-                        Logout
-                      </button>
-                    </li>
-                  </>
-                ) : (
-                  <>
-                    <li className="nav-item">
-                      <Link to="/login" className="nav-link  hover-effect">
-                        Login
-                      </Link>
-                    </li>
-
-                    <li className="nav-item">
-                      <Link
-                        to="/registration"
-                        className="btn btn-pink btn-sm hover-effect"
-                      >
-                        Register
-                      </Link>
-                    </li>
-                  </>
-                )}
-              </ul>
-            </div>
+                  )}
+                  <li className="nav-item">
+                    <Link to="/listings" className="nav-link hover-effect">
+                      Listings
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link to="/bookings" className="nav-link hover-effect">
+                      Bookings
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link to="/add-listing" className="nav-link hover-effect">
+                      Add Listing
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <button
+                      onClick={handleLogout}
+                      className="btn btn-pink btn-sm hover-effect"
+                    >
+                      Logout
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="nav-item">
+                    <Link to="/login" className="nav-link hover-effect">
+                      Login
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link
+                      to="/registration"
+                      className="btn btn-pink btn-sm hover-effect"
+                    >
+                      Register
+                    </Link>
+                  </li>
+                </>
+              )}
+            </ul>
           </div>
-        </nav>
+        </div>
+      </nav>
 
-        <div className="container py-5">
-          <div className="row justify-content-center">
-            <div className="col-lg-8">
-              <div className="card shadow">
-                <div className="card-header bg-pink text-white">
-                  <h4 className="mb-0">My Profile</h4>
+      <div className="container py-5">
+        <div className="card shadow">
+          <div className="card-header bg-pink text-white">
+            <h4>My Profile</h4>
+          </div>
+          <div className="card-body">
+            {successMessage && (
+              <div className="alert alert-success">{successMessage}</div>
+            )}
+            {errors.general && (
+              <div className="alert alert-danger">{errors.general}</div>
+            )}
+
+            {!editMode ? (
+              <>
+                <p>
+                  <strong>First Name:</strong> {user.firstName}
+                </p>
+                <p>
+                  <strong>Last Name:</strong> {user.lastName}
+                </p>
+                <p>
+                  <strong>Email:</strong> {user.email}
+                </p>
+                <p>
+                  <strong>Phone:</strong> {user.phoneNumber}
+                </p>
+
+                <button
+                  className="btn btn-pink"
+                  onClick={() => setEditMode(true)}
+                >
+                  Edit Profile
+                </button>
+              </>
+            ) : (
+              <form onSubmit={handleUpdateProfile}>
+                {[
+                  "firstName",
+                  "lastName",
+                  "email",
+                  "phoneNumber",
+                  "passwordHash",
+                ].map((field) => (
+                  <div className="mb-3" key={field}>
+                    <label className="form-label">
+                      {field === "passwordHash"
+                        ? "New Password"
+                        : field.replace(/([A-Z])/g, " $1")}
+                    </label>
+                    <input
+                      type={field === "passwordHash" ? "password" : "text"}
+                      className={`form-control ${errors[field] ? "is-invalid" : ""}`}
+                      value={formData[field] ?? ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, [field]: e.target.value })
+                      }
+                    />
+                    {errors[field] && (
+                      <div className="invalid-feedback">{errors[field]}</div>
+                    )}
+                  </div>
+                ))}
+
+                <div className="d-flex gap-2">
+                  <button type="submit" className="btn btn-pink">
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setEditMode(false);
+                      setFormData({
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        email: user.email,
+                        phoneNumber: user.phoneNumber,
+                        passwordHash: "",
+                      });
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
-                <div className="card-body p-4">
-                  {successMessage && (
-                    <div className="alert alert-success">{successMessage}</div>
-                  )}
-
-                  {errors.general && (
-                    <div className="alert alert-danger">{errors.general}</div>
-                  )}
-
-                  {!editMode ? (
-                    <div>
-                      <div className="mb-3">
-                        <strong>First Name:</strong> {user.fname}
-                      </div>
-                      <div className="mb-3">
-                        <strong>Last Name:</strong> {user.lname}
-                      </div>
-                      <div className="mb-3">
-                        <strong>Phone Number:</strong> {user.phone}
-                      </div>
-                      <div className="mb-3">
-                        <strong>Email:</strong> {user.email}
-                      </div>
-                      <div className="mb-3">
-                        <strong>Role:</strong>{" "}
-                        <span className="badge bg-pink p-2">{user.role}</span>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          setEditMode(true);
-                          setSuccessMessage("");
-                        }}
-                        className="btn btn-pink hover-effect"
-                      >
-                        Edit Profile
-                      </button>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleUpdateProfile}>
-                      <div className="mb-3">
-                        <label className="form-label">First Name</label>
-                        <input
-                          className={`form-control ${errors.fname ? "is-invalid" : ""
-                            }`}
-                          value={formData.fname}
-                          onChange={(e) =>
-                            setFormData({ ...formData, fname: e.target.value })
-                          }
-                        />
-                        {errors.fname && (
-                          <div className="invalid-feedback">{errors.fname}</div>
-                        )}
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="form-label">Last Name</label>
-                        <input
-                          className={`form-control ${errors.lname ? "is-invalid" : ""
-                            }`}
-                          value={formData.lname}
-                          onChange={(e) =>
-                            setFormData({ ...formData, lname: e.target.value })
-                          }
-                        />
-                        {errors.lname && (
-                          <div className="invalid-feedback">{errors.lname}</div>
-                        )}
-                      </div>
-                      <div className="mb-3">
-                        <label className="form-label">Phone Number</label>
-                        <input
-                          className={`form-control ${errors.phone ? "is-invalid" : ""
-                            }`}
-                          value={formData.phone}
-                          onChange={(e) =>
-                            setFormData({ ...formData, phone: e.target.value })
-                          }
-                        />
-                        {errors.phone && (
-                          <div className="invalid-feedback">{errors.phone}</div>
-                        )}
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="form-label">Email</label>
-                        <input
-                          type="email"
-                          className={`form-control ${errors.email ? "is-invalid" : ""
-                            }`}
-                          value={formData.email}
-                          onChange={(e) =>
-                            setFormData({ ...formData, email: e.target.value })
-                          }
-                        />
-                        {errors.email && (
-                          <div className="invalid-feedback">{errors.email}</div>
-                        )}
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="form-label">
-                          New Password (leave blank to keep current)
-                        </label>
-                        <input
-                          type="password"
-                          className={`form-control ${errors.password ? "is-invalid" : ""
-                            }`}
-                          value={formData.password}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              password: e.target.value,
-                            })
-                          }
-                          placeholder="Enter new password"
-                        />
-                        {errors.password && (
-                          <div className="invalid-feedback">
-                            {errors.password}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="d-flex gap-2">
-                        <button type="submit" className="btn btn-pink">
-                          Save Changes
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditMode(false);
-                            setFormData({
-                              fname: user.fname,
-                              lname: user.lname,
-                              email: user.email,
-                              password: "",
-                            });
-                            setErrors({});
-                          }}
-                          className="btn btn-pink"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              </div>
-            </div>
+              </form>
+            )}
           </div>
         </div>
       </div>
-      <footer className="bg-light py-4">
-        <div className="container text-center">
-          <p>
-            &copy; {new Date().getFullYear()} AirBnBee. All rights reserved.
-          </p>
-        </div>
-      </footer>
-    </>
+    </div>
   );
 }
 

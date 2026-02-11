@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import "../index.css";
+import { BASE_URL } from "../api";
 
 function AddListing() {
   const navigate = useNavigate();
@@ -54,10 +55,10 @@ function AddListing() {
     const file = e.target.files[0];
     if (file) {
       // Clear previous error
-      setErrors(prev => ({ ...prev, imgUrl: '' }));
+      setErrors((prev) => ({ ...prev, imgUrl: "" }));
 
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
       const img = new Image();
 
       img.onload = () => {
@@ -88,7 +89,7 @@ function AddListing() {
         let attempts = 0;
 
         const compress = () => {
-          compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          compressedDataUrl = canvas.toDataURL("image/jpeg", quality);
           const sizeInBytes = compressedDataUrl.length * 0.75; // Approximate base64 to bytes
 
           if (sizeInBytes > 90000 && quality > 0.1 && attempts < 10) {
@@ -98,7 +99,7 @@ function AddListing() {
           } else {
             setFormData((prev) => ({
               ...prev,
-              imgUrl: compressedDataUrl
+              imgUrl: compressedDataUrl,
             }));
           }
         };
@@ -109,8 +110,6 @@ function AddListing() {
       img.src = URL.createObjectURL(file);
     }
   };
-
-
 
   const handleMapClick = (e) => {
     setFormData((prev) => ({
@@ -192,8 +191,45 @@ function AddListing() {
         createdAt: new Date().toISOString(),
       };
 
-      const response = await fetch("http://localhost:8000/listings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newListing), }); console.log('Response status:', response.status); console.log('Response headers:', response.headers); if (!response.ok) { const errorText = await response.text(); console.log('Error response:', errorText); throw new Error(`HTTP ${response.status}: ${errorText}`); } const result = await response.json(); console.log('Success result:', result); alert("Listing created successfully!"); navigate("/listings");
-    } catch (err) { console.error('Full error:', err); setErrors({ general: err.message || "Failed to create listing" }); } finally {
+      const response = await fetch(`${BASE_URL}/listings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newListing),
+      });
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log("Error response:", errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      const result = await response.json();
+      const listingId = result.id;
+
+      console.log("Success result:", result);
+      alert("Listing created successfully!");
+      if (formData.imgUrl) {
+        const imageResponse = await fetch(`${BASE_URL}/ListingImages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            listingId: listingId, // must match ListingId
+            imageUrl: formData.imgUrl, // must match ImageUrl
+          }),
+        });
+
+        if (!imageResponse.ok) {
+          const errorText = await imageResponse.text();
+          console.error("Failed to save listing image:", errorText);
+        } else {
+          console.log("Image saved successfully");
+        }
+      }
+      navigate("/listings");
+    } catch (err) {
+      console.error("Full error:", err);
+      setErrors({ general: err.message || "Failed to create listing" });
+    } finally {
       setLoading(false);
     }
   };
@@ -523,8 +559,9 @@ function AddListing() {
                     <input
                       type="text"
                       name="listingName"
-                      className={`form-control ${errors.listingName ? "is-invalid" : ""
-                        }`}
+                      className={`form-control ${
+                        errors.listingName ? "is-invalid" : ""
+                      }`}
                       value={formData.listingName}
                       onChange={handleChange}
                     />

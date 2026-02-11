@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import 'bootstrap-icons/font/bootstrap-icons.css';
+import "bootstrap-icons/font/bootstrap-icons.css";
+import { BASE_URL } from "../api";
 
 import "../index.css";
 
@@ -14,9 +15,7 @@ function Home() {
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
   const [guests, setGuests] = useState(1);
-  const [favorites, setFavorites] = useState([]);  // Initialize as an empty array
-
-
+  const [favorites, setFavorites] = useState([]); // Initialize as an empty array
 
   const user = JSON.parse(localStorage.getItem("currentUser"));
 
@@ -47,10 +46,10 @@ function Home() {
 
       try {
         // Update the favorites list in the db.json by making a PATCH request
-        const response = await fetch(`http://localhost:8000/users/${currentUser.id}`, {
-          method: 'PATCH',
+        const response = await fetch(`${BASE_URL}/users/${currentUser.id}`, {
+          method: "PATCH",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             favorites: currentUser.favorites,
@@ -60,7 +59,7 @@ function Home() {
         if (response.ok) {
           // If update is successful, save the updated user back to localStorage
           localStorage.setItem("currentUser", JSON.stringify(currentUser));
-          setFavorites(currentUser.favorites);  // Update the state to reflect the change
+          setFavorites(currentUser.favorites); // Update the state to reflect the change
         } else {
           console.error("Failed to update favorites");
         }
@@ -75,7 +74,6 @@ function Home() {
     fetchBookings();
   }, []);
 
-
   useEffect(() => {
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     if (currentUser) {
@@ -88,13 +86,38 @@ function Home() {
     }
   }, []);
 
-
-
   const fetchListings = async () => {
     try {
-      const res = await fetch("http://localhost:8000/listings");
+      const res = await fetch(`${BASE_URL}/listings`);
       const data = await res.json();
-      setListings(data);
+
+      // Fetch images for each listing
+      const listingsWithImages = await Promise.all(
+        data.map(async (listing) => {
+          try {
+            const imgRes = await fetch(
+              `${BASE_URL}/ListingImages/${listing.id}`,
+            );
+            const images = await imgRes.json();
+
+            return {
+              ...listing,
+              images: images, // add the array of images to the listing
+              imgUrl: images.length > 0 ? images[0].imageUrl : "",
+              // first image for display
+            };
+          } catch (err) {
+            console.error(
+              "Failed to fetch images for listing:",
+              listing.id,
+              err,
+            );
+            return { ...listing, images: [], imgUrl: "" };
+          }
+        }),
+      );
+
+      setListings(listingsWithImages);
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch listings:", err);
@@ -104,14 +127,13 @@ function Home() {
 
   const fetchBookings = async () => {
     try {
-      const res = await fetch("http://localhost:8000/bookings");
+      const res = await fetch(`${BASE_URL}/bookings`);
       const data = await res.json();
       setBookings(data);
     } catch (err) {
       console.error("Failed to fetch bookings:", err);
     }
   };
-
 
   // Function to check if a listing is available for the selected dates
   const isListingAvailable = (listing) => {
@@ -124,9 +146,12 @@ function Home() {
 
         // Check if the booking dates overlap with the selected dates
         return (
-          (selectedStartDate >= bookingStartDate && selectedStartDate <= bookingEndDate) ||
-          (selectedEndDate >= bookingStartDate && selectedEndDate <= bookingEndDate) ||
-          (selectedStartDate <= bookingStartDate && selectedEndDate >= bookingEndDate)
+          (selectedStartDate >= bookingStartDate &&
+            selectedStartDate <= bookingEndDate) ||
+          (selectedEndDate >= bookingStartDate &&
+            selectedEndDate <= bookingEndDate) ||
+          (selectedStartDate <= bookingStartDate &&
+            selectedEndDate >= bookingEndDate)
         );
       }
       return false;
@@ -147,7 +172,6 @@ function Home() {
       isWithinGuestLimit
     );
   });
-
 
   // Get today's date for disabling past dates
   const today = new Date().toISOString().split("T")[0]; // Format: "YYYY-MM-DD"
@@ -181,6 +205,7 @@ function Home() {
 
   return (
     <>
+      {console.log(filteredListings)}
       <div className="min-vh-100 bg-light">
         <nav className="navbar navbar-expand-lg navbar-light bg-light sticky-top">
           <div className="container">
@@ -249,7 +274,10 @@ function Home() {
                     </li>
 
                     <li className="nav-item">
-                      <Link to="/registration" className="btn btn-pink btn-sm hover-effect">
+                      <Link
+                        to="/registration"
+                        className="btn btn-pink btn-sm hover-effect"
+                      >
                         Register
                       </Link>
                     </li>
@@ -263,7 +291,9 @@ function Home() {
         <header className="bg-pink text-white text-center py-5">
           <div className="container">
             <h1 className="display-4">Find Your Perfect Getaway</h1>
-            <p className="lead">Explore unique stays and experiences around the world</p>
+            <p className="lead">
+              Explore unique stays and experiences around the world
+            </p>
           </div>
         </header>
 
@@ -323,10 +353,7 @@ function Home() {
               />
             </div>
           </form>
-          <button
-            className="btn btn-secondary mt-3"
-            onClick={resetSearch}
-          >
+          <button className="btn btn-secondary mt-3" onClick={resetSearch}>
             Reset Search
           </button>
         </section>
@@ -348,29 +375,31 @@ function Home() {
                       alt={listing.listingName}
                       style={{ height: "200px", objectFit: "cover" }}
                     />
+
                     <div className="card-body">
                       <button
                         className="btn btn-link position-absolute top-0 end-0 m-2"
                         onClick={() => handleFavoriteToggle(listing.id)}
                       >
                         <i
-                          className={`bi ${favorites.includes(listing.id) ? 'bi-heart-fill' : 'bi-heart'}`}
+                          className={`bi ${favorites.includes(listing.id) ? "bi-heart-fill" : "bi-heart"}`}
                           style={{ fontSize: "1.5rem", color: "red" }}
                         ></i>
                       </button>
-
-
 
                       <h5 className="card-title">
                         {listing.listingName}, {listing.country}
                       </h5>
                       <p className="card-text">
                         {listing.description
-                          ? listing.description.substring(0, 100) + (listing.description.length > 100 ? "..." : "")
+                          ? listing.description.substring(0, 100) +
+                            (listing.description.length > 100 ? "..." : "")
                           : ""}
                       </p>
                       <p className="card-text">
-                        <small className="text-muted">${listing.pricePerNight} / night</small>
+                        <small className="text-muted">
+                          ${listing.pricePerNight} / night
+                        </small>
                       </p>
 
                       <Link
@@ -390,7 +419,9 @@ function Home() {
       </div>
       <footer className="bg-light py-4">
         <div className="container text-center">
-          <p>&copy; {new Date().getFullYear()} AirBnBee. All rights reserved.</p>
+          <p>
+            &copy; {new Date().getFullYear()} AirBnBee. All rights reserved.
+          </p>
         </div>
       </footer>
     </>

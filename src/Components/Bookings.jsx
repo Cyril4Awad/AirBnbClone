@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../index.css";
+import {BASE_URL} from "../api";
 
 function Bookings() {
   const [listings, setListings] = useState([]);
@@ -22,21 +23,21 @@ function Bookings() {
 
   const fetchBookings = async () => {
     try {
-      const res = await fetch("http://localhost:8000/bookings");
+      const res = await fetch(`${BASE_URL}/bookings`);
       const data = await res.json();
 
       // Only current user's bookings
       const userBookings = data.filter(
-        (booking) => String(booking.userId) === String(user.id),
+        (booking) => Number(booking.userId) === Number(user.id),
       );
 
       // Fetch listing info for each booking
-      const resListings = await fetch("http://localhost:8000/listings");
+      const resListings = await fetch(`${BASE_URL}/listings`);
       const listingsData = await resListings.json();
 
       const bookingsWithListing = userBookings.map((booking) => {
         const listing = listingsData.find(
-          (l) => String(l.id) === String(booking.listingId),
+          (l) => Number(l.id) === Number(booking.listingId),
         );
         return { ...booking, listing };
       });
@@ -59,9 +60,8 @@ function Bookings() {
     }
 
     try {
-      await fetch(`http://localhost:8000/bookings/${booking.id}`, {
-        method: "DELETE",
-      });
+      await fetch(`${BASE_URL}/bookings/${booking.id}`, { method: "DELETE" });
+
       fetchBookings(); // refresh list
       alert("Booking deleted successfully!");
     } catch (err) {
@@ -165,7 +165,8 @@ function Bookings() {
                       />
                       <div className="card-body">
                         <h5 className="card-title">
-                          {booking.listing.listingName}, {booking.listing.country}
+                          {booking.listing.listingName},{" "}
+                          {booking.listing.country}
                         </h5>
                         <ul className="list-unstyled">
                           <li>
@@ -175,10 +176,12 @@ function Bookings() {
                             <strong>Size:</strong> {booking.listing.size} m²
                           </li>
                           <li>
-                            <strong>Bedrooms:</strong> {booking.listing.bedrooms}
+                            <strong>Bedrooms:</strong>{" "}
+                            {booking.listing.bedrooms}
                           </li>
                           <li>
-                            <strong>Price:</strong> ${booking.listing.pricePerNight} / night
+                            <strong>Price:</strong> $
+                            {booking.listing.pricePerNight} / night
                           </li>
                           <li>
                             <strong>Check-in:</strong> {booking.checkIn}
@@ -193,9 +196,9 @@ function Bookings() {
                             <strong>Phone:</strong> {booking.phoneNumber}
                           </li>
                           <li>
-                            <strong>Created on:</strong> {new Date(booking.createdAt).toLocaleDateString()}
+                            <strong>Created on:</strong>{" "}
+                            {new Date(booking.createdAt).toLocaleDateString()}
                           </li>
-
                         </ul>
                         <Link
                           className="btn btn-pink btn-sm m-2"
@@ -222,7 +225,9 @@ function Bookings() {
 
       <footer className="bg-light py-4">
         <div className="container text-center">
-          <p>&copy; {new Date().getFullYear()} AirBnBee. All rights reserved.</p>
+          <p>
+            &copy; {new Date().getFullYear()} AirBnBee. All rights reserved.
+          </p>
         </div>
       </footer>
     </>

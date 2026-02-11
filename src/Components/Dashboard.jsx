@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Loading from "./Loading";
+import {BASE_URL} from "../api";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ function Dashboard() {
   };
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost:8000/users");
+      const res = await fetch(`${BASE_URL}/users`);
       const data = await res.json();
       setUsers(data);
       setLoading(false);
@@ -66,10 +67,9 @@ function Dashboard() {
     navigate(`/user-bookings/${userId}`);
   };
 
-
   const fetchListings = async () => {
     try {
-      const res = await fetch("http://localhost:8000/listings");
+      const res = await fetch(`${BASE_URL}/listings`);
       const data = await res.json();
       setListings(data);
     } catch (err) {
@@ -79,7 +79,7 @@ function Dashboard() {
 
   const fetchBookings = async () => {
     try {
-      const res = await fetch("http://localhost:8000/bookings");
+      const res = await fetch(`${BASE_URL}/bookings`);
       const data = await res.json();
       setBookings(data);
     } catch (err) {
@@ -113,10 +113,10 @@ function Dashboard() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8000/users/${userId}`);
+      const res = await fetch(`${BASE_URL}/users/${userId}`);
       const userData = await res.json();
 
-      await fetch(`http://localhost:8000/users/${userId}`, {
+      await fetch(`${BASE_URL}/users/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...userData, ...editFormData }),
@@ -161,7 +161,7 @@ function Dashboard() {
       const existingUsers = await res.json();
 
       const emailExists = existingUsers.some(
-        (u) => u.email === newUserData.email
+        (u) => u.email === newUserData.email,
       );
 
       if (emailExists) {
@@ -199,7 +199,7 @@ function Dashboard() {
     }
 
     try {
-      await fetch(`http://localhost:8000/users/${userId}`, {
+      await fetch(`${BASE_URL}/users/${userId}`, {
         method: "DELETE",
       });
       fetchUsers(); // refresh list
@@ -212,10 +212,10 @@ function Dashboard() {
 
   const handleEditUser = async (userId, updates) => {
     try {
-      const res = await fetch(`http://localhost:8000/users/${userId}`);
+      const res = await fetch(`${BASE_URL}/users/${userId}`);
       const userData = await res.json();
 
-      await fetch(`http://localhost:8000/users/${userId}`, {
+      await fetch(`${BASE_URL}/users/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...userData, ...updates }),
@@ -252,7 +252,8 @@ function Dashboard() {
       <nav className="navbar navbar-dark bg-danger shadow">
         <div className="container">
           <span className="navbar-brand">
-            <i className="bi bi-shield-lock"></i> Admin Dashboard - Welcome, {user.fname}
+            <i className="bi bi-shield-lock"></i> Admin Dashboard - Welcome,{" "}
+            {user.fname}
           </span>
           <div className="d-flex gap-2">
             <Link to="/" className="btn btn-light btn-sm">
@@ -293,11 +294,15 @@ function Dashboard() {
                   <div className="col-md-6 mb-3">
                     <label className="form-label">First Name *</label>
                     <input
-                      className={`form-control ${addUserErrors.fname ? "is-invalid" : ""
-                        }`}
+                      className={`form-control ${
+                        addUserErrors.fname ? "is-invalid" : ""
+                      }`}
                       value={newUserData.fname}
                       onChange={(e) =>
-                        setNewUserData({ ...newUserData, fname: e.target.value })
+                        setNewUserData({
+                          ...newUserData,
+                          fname: e.target.value,
+                        })
                       }
                       placeholder="Enter first name"
                     />
@@ -310,11 +315,15 @@ function Dashboard() {
                   <div className="col-md-6 mb-3">
                     <label className="form-label">Last Name *</label>
                     <input
-                      className={`form-control ${addUserErrors.lname ? "is-invalid" : ""
-                        }`}
+                      className={`form-control ${
+                        addUserErrors.lname ? "is-invalid" : ""
+                      }`}
                       value={newUserData.lname}
                       onChange={(e) =>
-                        setNewUserData({ ...newUserData, lname: e.target.value })
+                        setNewUserData({
+                          ...newUserData,
+                          lname: e.target.value,
+                        })
                       }
                       placeholder="Enter last name"
                     />
@@ -330,11 +339,15 @@ function Dashboard() {
                     <label className="form-label">Email *</label>
                     <input
                       type="email"
-                      className={`form-control ${addUserErrors.email ? "is-invalid" : ""
-                        }`}
+                      className={`form-control ${
+                        addUserErrors.email ? "is-invalid" : ""
+                      }`}
                       value={newUserData.email}
                       onChange={(e) =>
-                        setNewUserData({ ...newUserData, email: e.target.value })
+                        setNewUserData({
+                          ...newUserData,
+                          email: e.target.value,
+                        })
                       }
                       placeholder="Enter email"
                     />
@@ -348,8 +361,9 @@ function Dashboard() {
                     <label className="form-label">Password *</label>
                     <input
                       type="password"
-                      className={`form-control ${addUserErrors.password ? "is-invalid" : ""
-                        }`}
+                      className={`form-control ${
+                        addUserErrors.password ? "is-invalid" : ""
+                      }`}
                       value={newUserData.password}
                       onChange={(e) =>
                         setNewUserData({
@@ -479,8 +493,9 @@ function Dashboard() {
                       </td>
                       <td>
                         <span
-                          className={`badge ${u.role === "admin" ? "bg-pink" : "bg-pink"
-                            }`}
+                          className={`badge ${
+                            u.role === "admin" ? "bg-pink" : "bg-pink"
+                          }`}
                         >
                           {u.role}
                         </span>
@@ -519,19 +534,19 @@ function Dashboard() {
                               }}
                               className="btn btn-sm btn-pink"
                             >
-                              {u.role === "admin" ? "Remove Admin" : "Make Admin"}
+                              {u.role === "admin"
+                                ? "Remove Admin"
+                                : "Make Admin"}
                             </button>
                             <button
                               onClick={() => handleViewUserListings(u.id)}
                               className="btn btn-sm btn-danger"
-
                             >
                               Go to his lisitngs
                             </button>
                             <button
                               onClick={() => handleViewUserBookings(u.id)}
                               className="btn btn-sm btn-pink"
-
                             >
                               Go to his bookings
                             </button>

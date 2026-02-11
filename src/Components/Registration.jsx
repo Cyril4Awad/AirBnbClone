@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import Loading from "./Loading";
+import { BASE_URL } from "../api";
 
 function Registration() {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ function Registration() {
     if (Object.keys(validationErrors).length === 0) {
       try {
         // Fetching all users
-        const res = await fetch("http://localhost:8000/users");
+        const res = await fetch(`${BASE_URL}/users`);
         const users = await res.json();
 
         // Check if email already exists
@@ -78,11 +79,25 @@ function Registration() {
         }
 
         // Destructuring
-        const { cpassword, countryCode, ...userData } = formData; // Don't save cpassword and countryCode
-        userData.role = "user";
+        const { cpassword, age, ...rest } = formData;
+
+        const birthYear = new Date().getFullYear() - parseInt(age);
+        const dateOfBirth = new Date(birthYear, 0, 1);
+
+        const userData = {
+          FirstName: rest.fname,
+          LastName: rest.lname,
+          Email: rest.email,
+          PasswordHash: rest.password.trim(),
+          PhoneNumber: rest.phone || null,
+          CountryCode: rest.countryCode || null,
+          DateOfBirth: dateOfBirth,
+          Role: 0, // user
+          CreatedAt: new Date(),
+        };
 
         // Adding user data to the JSON file
-        await fetch("http://localhost:8000/users", {
+        await fetch(`${BASE_URL}/users`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(userData),
@@ -194,7 +209,10 @@ function Registration() {
                       className="form-control me-2"
                       value={formData.countryCode}
                       onChange={(e) =>
-                        setFormData({ ...formData, countryCode: e.target.value })
+                        setFormData({
+                          ...formData,
+                          countryCode: e.target.value,
+                        })
                       }
                     >
                       <option value="+1">+1 (USA)</option>
@@ -226,11 +244,13 @@ function Registration() {
                         setFormData({ ...formData, age: e.target.value })
                       }
                     />
-                   
                   </div>
-                      <span className="row"> {errors.age && (
+                  <span className="row">
+                    {" "}
+                    {errors.age && (
                       <div className="row text-danger mt-1">{errors.age}</div>
-                    )}</span>
+                    )}
+                  </span>
                   <button className="btn btn-success w-100 mb-3">
                     Register
                   </button>

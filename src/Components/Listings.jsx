@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../index.css";
+import { BASE_URL } from "../api";
+
 function Listings() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,11 +21,40 @@ function Listings() {
 
   const fetchListings = async () => {
     try {
-      const res = await fetch("http://localhost:8000/listings");
+      // Step 1: Get all listings
+      const res = await fetch(`${BASE_URL}/listings`);
       const data = await res.json();
-      // Filter listings for the current user
+
+      // Step 2: Filter for current user
       const userListings = data.filter((listing) => listing.hostId === user.id);
-      setListings(userListings);
+
+      // Step 3: Fetch images for each of the user's listings
+      const listingsWithImages = await Promise.all(
+        userListings.map(async (listing) => {
+          try {
+            const imgRes = await fetch(
+              `${BASE_URL}/ListingImages/${listing.id}`,
+            );
+            const images = await imgRes.json();
+
+            return {
+              ...listing,
+              images: images, // array of images
+              imgUrl: images.length > 0 ? images[0].ImageUrl : "", // first image
+            };
+          } catch (err) {
+            console.error(
+              "Failed to fetch images for listing:",
+              listing.id,
+              err,
+            );
+            return { ...listing, images: [], imgUrl: "" };
+          }
+        }),
+      );
+
+      // Step 4: Save to state
+      setListings(listingsWithImages);
       setLoading(false);
     } catch (err) {
       console.error("Failed to fetch listings:", err);
@@ -36,37 +67,23 @@ function Listings() {
   }, []);
 
   const handleDeleteListing = async (listing) => {
-    if (!window.confirm("Are you sure you want to delete this listing?")) {
+    if (!window.confirm("Are you sure you want to delete this listing?"))
       return;
-    }
 
     try {
-      // Step 1: Delete the listing
-      await fetch(`http://localhost:8000/listings/${listing.id}`, {
+      const res = await fetch(`${BASE_URL}/listings/${listing.id}`, {
         method: "DELETE",
       });
 
-      // Step 2: Get all bookings related to the deleted listing
-      const resBookings = await fetch(`http://localhost:8000/bookings?listingId=${listing.id}`);
-      const bookingsData = await resBookings.json();
+      if (!res.ok) throw new Error("Failed to delete listing");
 
-      // Step 3: Delete each booking related to the listing
-      for (const booking of bookingsData) {
-        await fetch(`http://localhost:8000/bookings/${booking.id}`, {
-          method: "DELETE",
-        });
-      }
-
-      // Step 4: Refresh the listings after deletion
-      fetchListings(); // This will fetch the updated listings
-
-      alert("Listing and associated bookings deleted successfully!");
+      fetchListings(); // refresh
+      alert("Listing deleted successfully!");
     } catch (err) {
-      console.error("Error deleting listing and bookings:", err);
-      alert("Failed to delete listing and related bookings.");
+      console.error(err);
+      alert("Failed to delete listing.");
     }
   };
-
 
   return (
     <>
@@ -159,7 +176,7 @@ function Listings() {
                         <div className="col-lg-4 mb-4" key={listing.id}>
                           <div className="card h-100">
                             <img
-                              src={listing.imgUrl}
+                              src={listing.imageUrl}
                               className="card-img-top"
                               alt={listing.listingName}
                               style={{ height: "200px", objectFit: "cover" }}
@@ -169,14 +186,13 @@ function Listings() {
                               <h5 className="card-title">
                                 {listing.listingName}, {listing.country}
                               </h5>
-
-                              {/* description should go here instead of adress */}
                               <p className="card-text">{listing.description}</p>
                               <p className="card-text">
                                 <small className="text-muted">
                                   ${listing.pricePerNight} / night
                                 </small>
                               </p>
+
                               <Link
                                 to="/view-listing"
                                 className="btn btn-pink btn-sm"

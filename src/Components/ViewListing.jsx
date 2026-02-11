@@ -4,6 +4,7 @@ import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "../index.css";
+import { BASE_URL } from "../api";
 
 function ViewListing() {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ function ViewListing() {
       try {
         const hostId = storedListing.hostId;
 
-        const res = await fetch("http://localhost:8000/users");
+        const res = await fetch(`${BASE_URL}/users`);
         const users = await res.json();
 
         const hostFound = users.find((u) => u.id === hostId);
@@ -63,11 +64,13 @@ function ViewListing() {
 
     const fetchBookings = async () => {
       try {
-        const res = await fetch(
-          `http://localhost:8000/bookings?listingId=${listing.id}`
-        );
+        const res = await fetch(`${BASE_URL}/bookings?listingId=${listing.id}`);
         const data = await res.json();
-
+        if (!Array.isArray(data)) {
+          console.error("Expected array but got:", data);
+          setBookedDates([]);
+          return;
+        }
         // check in check out
         const dates = data.flatMap((booking) => {
           const start = new Date(booking.checkIn);
@@ -163,24 +166,34 @@ function ViewListing() {
 
     try {
       const newBooking = {
-        ...formData,
-        userId: user.id,
-        listingId: listing.id,
-        createdAt: new Date().toISOString(),
+        UserId: Number(user.id),
+        ListingId: Number(listing.id),
+        FullName: formData.fullName.trim(),
+        PhoneNumber: formData.phoneNumber.trim(),
+        Guests: Number(formData.guests),
+        CheckIn: formData.checkIn + "T00:00:00",
+        CheckOut: formData.checkOut + "T00:00:00",
       };
 
-      await fetch("http://localhost:8000/bookings", {
+      console.log("Booking data:", newBooking);
+
+      const res = await fetch(`${BASE_URL}/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newBooking),
       });
+      if (!res.ok) {
+        const errData = await res.json();
+        console.error("Error response:", errData);
+        throw new Error("Failed to save booking");
+      }
 
       setLoading(false);
       alert("Booking made successfully");
       navigate("/bookings");
     } catch (err) {
       console.error("Failed to make booking:", err);
-      setError("Failed to make booking. Try again.");
+      setErrors({ form: "Failed to make booking. Try again." });
     }
   };
 
@@ -217,7 +230,7 @@ function ViewListing() {
 
     if (conflict.length > 0) {
       alert(
-        "Some of the selected dates are already booked. Please choose other dates."
+        "Some of the selected dates are already booked. Please choose other dates.",
       );
       return;
     }
@@ -328,7 +341,7 @@ function ViewListing() {
                 <p className="text-muted mb-2">
                   Hosted by{" "}
                   <strong>
-                    {host ? `${host.fname} ${host.lname}` : "Loading host..."}
+                    {host ? `${host.firstName} ${host.lastName}` : "Loading host..."}
                   </strong>
                 </p>
 
@@ -406,12 +419,19 @@ function ViewListing() {
                   <div className="row mb-3">
                     <div className="col-md-6 mb-2 mb-md-0">
                       <DatePicker
-                        selected={formData.checkIn ? new Date(formData.checkIn + 'T00:00:00') : null}
+                        selected={
+                          formData.checkIn
+                            ? new Date(formData.checkIn + "T00:00:00")
+                            : null
+                        }
                         onChange={(date) => {
                           // Format date locally instead of using ISO
                           const year = date.getFullYear();
-                          const month = String(date.getMonth() + 1).padStart(2, '0');
-                          const day = String(date.getDate()).padStart(2, '0');
+                          const month = String(date.getMonth() + 1).padStart(
+                            2,
+                            "0",
+                          );
+                          const day = String(date.getDate()).padStart(2, "0");
                           const localDate = `${year}-${month}-${day}`;
 
                           setFormData({
@@ -421,7 +441,9 @@ function ViewListing() {
                           });
                         }}
                         minDate={new Date()}
-                        excludeDates={bookedDates.map((d) => new Date(d + 'T00:00:00'))}
+                        excludeDates={bookedDates.map(
+                          (d) => new Date(d + "T00:00:00"),
+                        )}
                         placeholderText="Check-in"
                         className={`form-control ${errors.checkIn ? "is-invalid" : ""}`}
                       />
@@ -432,11 +454,18 @@ function ViewListing() {
 
                     <div className="col-md-6">
                       <DatePicker
-                        selected={formData.checkOut ? new Date(formData.checkOut + 'T00:00:00') : null}
+                        selected={
+                          formData.checkOut
+                            ? new Date(formData.checkOut + "T00:00:00")
+                            : null
+                        }
                         onChange={(date) => {
                           const year = date.getFullYear();
-                          const month = String(date.getMonth() + 1).padStart(2, '0');
-                          const day = String(date.getDate()).padStart(2, '0');
+                          const month = String(date.getMonth() + 1).padStart(
+                            2,
+                            "0",
+                          );
+                          const day = String(date.getDate()).padStart(2, "0");
                           const localDate = `${year}-${month}-${day}`;
 
                           setFormData({
@@ -444,8 +473,14 @@ function ViewListing() {
                             checkOut: localDate,
                           });
                         }}
-                        minDate={formData.checkIn ? new Date(formData.checkIn + 'T00:00:00') : new Date()}
-                        excludeDates={bookedDates.map((d) => new Date(d + 'T00:00:00'))}
+                        minDate={
+                          formData.checkIn
+                            ? new Date(formData.checkIn + "T00:00:00")
+                            : new Date()
+                        }
+                        excludeDates={bookedDates.map(
+                          (d) => new Date(d + "T00:00:00"),
+                        )}
                         placeholderText="Check-out"
                         className={`form-control ${errors.checkOut ? "is-invalid" : ""}`}
                       />
@@ -506,23 +541,27 @@ function ViewListing() {
               </div>
 
               <div className="mt-4">
-                <LoadScript googleMapsApiKey="AIzaSyC1ZNtGH3gfzpzgBhjvUH7ZnL8MeYuM3Po">
-                  <GoogleMap
-                    mapContainerStyle={{ height: "300px", width: "100%" }}
-                    center={{
-                      lat: listing.lat,
-                      lng: listing.lng,
-                    }}
-                    zoom={15}
-                  >
-                    <Marker
-                      position={{
-                        lat: listing.lat,
-                        lng: listing.lng,
-                      }}
-                    />
-                  </GoogleMap>
-                </LoadScript>
+                {listing &&
+                  !isNaN(Number(listing.lat)) &&
+                  !isNaN(Number(listing.lng)) && (
+                    <LoadScript googleMapsApiKey="YOUR_API_KEY">
+                      <GoogleMap
+                        mapContainerStyle={{ height: "300px", width: "100%" }}
+                        center={{
+                          lat: Number(listing.lat),
+                          lng: Number(listing.lng),
+                        }}
+                        zoom={15}
+                      >
+                        <Marker
+                          position={{
+                            lat: Number(listing.lat),
+                            lng: Number(listing.lng),
+                          }}
+                        />
+                      </GoogleMap>
+                    </LoadScript>
+                  )}
               </div>
             </div>
           </div>
