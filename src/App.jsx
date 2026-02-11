@@ -11,6 +11,7 @@ import Profile from "./Components/Profile";
 import AddListing from "./Components/AddListing";
 import ViewListing from "./Components/ViewListing";
 import UserListings from "./Components/UserListings";
+import Favorites from "./Components/Favorites";
 
 function App() {
   return (
@@ -67,6 +68,15 @@ function App() {
         element={
           <ProtectedRoute>
             <ViewListing />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/favorites"
+        element={
+          <ProtectedRoute>
+            <Favorites />
           </ProtectedRoute>
         }
       />

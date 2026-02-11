@@ -47,7 +47,7 @@ function ViewListing() {
       }
     };
 
-    fetchHost(); // 👈 THIS was missing
+    fetchHost();
   }, [navigate]);
 
   const [formData, setFormData] = useState({
@@ -421,7 +421,7 @@ function ViewListing() {
                       <DatePicker
                         selected={
                           formData.checkIn
-                            ? new Date(formData.checkIn + "T00:00:00")
+                            ? new Date(formData.checkIn + "")
                             : null
                         }
                         onChange={(date) => {
@@ -441,9 +441,7 @@ function ViewListing() {
                           });
                         }}
                         minDate={new Date()}
-                        excludeDates={bookedDates.map(
-                          (d) => new Date(d + "T00:00:00"),
-                        )}
+                        excludeDates={bookedDates.map((d) => new Date(d + ""))}
                         placeholderText="Check-in"
                         className={`form-control ${errors.checkIn ? "is-invalid" : ""}`}
                       />

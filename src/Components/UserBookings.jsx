@@ -58,6 +58,7 @@ function UserBookings() {
       });
       setBookings(bookings.filter((booking) => booking.id !== bookingId)); // Remove booking from state
       alert("Booking deleted successfully!");
+      navigate("/dashboard")
     } catch (err) {
       console.error("Failed to delete booking:", err);
       alert("Failed to delete booking");

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../index.css";
-import {BASE_URL} from "../api";
+import { BASE_URL } from "../api";
 
 function Bookings() {
   const [listings, setListings] = useState([]);
@@ -35,8 +35,32 @@ function Bookings() {
       const resListings = await fetch(`${BASE_URL}/listings`);
       const listingsData = await resListings.json();
 
+      const listingsWithImages = await Promise.all(
+        listingsData.map(async (listing) => {
+          try {
+            const imgRes = await fetch(
+              `${BASE_URL}/ListingImages/${listing.id}`,
+            );
+            const images = await imgRes.json();
+
+            return {
+              ...listing,
+              images: images, // array of images
+              imgUrl: images.length > 0 ? images[0].imageUrl : "", // first image
+            };
+          } catch (err) {
+            console.error(
+              "Failed to fetch images for listing:",
+              listing.id,
+              err,
+            );
+            return { ...listing, images: [], imgUrl: "" };
+          }
+        }),
+      );
+
       const bookingsWithListing = userBookings.map((booking) => {
-        const listing = listingsData.find(
+        const listing = listingsWithImages.find(
           (l) => Number(l.id) == Number(booking.listingId),
         );
         return { ...booking, listing };
@@ -100,7 +124,7 @@ function Bookings() {
                         Home
                       </Link>
                     </li>
-                    {user.role === "admin" && (
+                    {user.role == 1 && (
                       <li className="nav-item">
                         <Link to="/dashboard" className="nav-link hover-effect">
                           Dashboard

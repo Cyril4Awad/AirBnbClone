@@ -3,19 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { BASE_URL } from "../api";
 
-import "../index.css";
-
-function Home() {
+function Favorites() {
   const navigate = useNavigate();
-  const [userCount, setUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [listings, setListings] = useState([]);
-  const [bookings, setBookings] = useState([]); // Assuming you have bookings data
-  const [searchQuery, setSearchQuery] = useState("");
-  const [checkInDate, setCheckInDate] = useState("");
-  const [checkOutDate, setCheckOutDate] = useState("");
-  const [guests, setGuests] = useState(1);
-  const [favorites, setFavorites] = useState([]); // Initialize as an empty array
+  const [bookings, setBookings] = useState([]);
+  const [favorites, setFavorites] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("currentUser"));
 
@@ -24,13 +17,8 @@ function Home() {
     window.location.reload();
   };
 
-  const handleViewListing = (listing) => {
-    localStorage.setItem("currentListing", JSON.stringify(listing));
-    navigate("/view-listing");
-  };
   const handleFavoriteToggle = async (listingId) => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (!currentUser) return;
+    if (!user) return;
 
     const isFavorite = favorites.includes(listingId);
 
@@ -38,7 +26,7 @@ function Home() {
       if (isFavorite) {
         // REMOVE
         await fetch(
-          `${BASE_URL}/userfavorites/${Number(currentUser.id)}/${Number(listingId)}`,
+          `${BASE_URL}/userfavorites/${Number(user.id)}/${Number(listingId)}`,
           {
             method: "DELETE",
           },
@@ -51,7 +39,7 @@ function Home() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userId: Number(currentUser.id),
+            userId: Number(user.id),
             listingId: Number(listingId),
           }),
         });
@@ -65,6 +53,7 @@ function Home() {
 
   useEffect(() => {
     fetchListings();
+
     fetchBookings();
   }, []);
 
@@ -102,7 +91,6 @@ function Home() {
             const imgRes = await fetch(
               `${BASE_URL}/ListingImages/${listing.id}`,
             );
-            const images = await imgRes.json();
 
             return {
               ...listing,
@@ -139,73 +127,9 @@ function Home() {
     }
   };
 
-  // Function to check if a listing is available for the selected dates
-  const isListingAvailable = (listing) => {
-    return !bookings.some((booking) => {
-      if (booking.listingId === listing.id) {
-        const bookingStartDate = new Date(booking.checkIn);
-        const bookingEndDate = new Date(booking.checkOut);
-        const selectedStartDate = new Date(checkInDate);
-        const selectedEndDate = new Date(checkOutDate);
-
-        // Check if the booking dates overlap with the selected dates
-        return (
-          (selectedStartDate >= bookingStartDate &&
-            selectedStartDate <= bookingEndDate) ||
-          (selectedEndDate >= bookingStartDate &&
-            selectedEndDate <= bookingEndDate) ||
-          (selectedStartDate <= bookingStartDate &&
-            selectedEndDate >= bookingEndDate)
-        );
-      }
-      return false;
-    });
-  };
-
-  // Filter listings based on country, available dates, and guests
-
-  const filteredListings = listings.filter((listing) => {
-    // Only apply filtering when the user has entered criteria
-    const isAvailable = isListingAvailable(listing);
-    const isWithinGuestLimit = listing.guests >= guests;
-
-    // Check if the listing matches the search criteria
-    return (
-      listing.country.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      isAvailable &&
-      isWithinGuestLimit
-    );
-  });
-
-  // Get today's date for disabling past dates
-  const today = new Date().toISOString().split("T")[0]; // Format: "YYYY-MM-DD"
-
-  // Handle Check-In Date Change
-  const handleCheckInChange = (e) => {
-    const newCheckInDate = e.target.value;
-    setCheckInDate(newCheckInDate);
-
-    // Reset the check-out date when the check-in date changes
-    if (newCheckInDate >= checkOutDate) {
-      setCheckOutDate(newCheckInDate); // Reset check-out to the same day as check-in
-    }
-  };
-  // Handle Check-Out Date Change
-  const handleCheckOutChange = (e) => {
-    setCheckOutDate(e.target.value);
-  };
-  const resetSearch = () => {
-    setSearchQuery("");
-    setCheckInDate("");
-    setCheckOutDate("");
-    setGuests(1);
-  };
-  useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (currentUser) {
-      setFavorites(currentUser.favorites); // Load favorites from localStorage
-    }
-  }, []);
+  const favoriteListings = listings.filter((listing) =>
+    favorites.includes(listing.id),
+  );
 
   return (
     <>
@@ -228,6 +152,12 @@ function Home() {
             </button>
             <div className="collapse navbar-collapse" id="mainNavbar">
               <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-3">
+                <li className="nav-item">
+                  <Link to="/" className="nav-link hover-effect">
+                    Home
+                  </Link>
+                </li>
+
                 {user ? (
                   <>
                     {user.role === 1 && (
@@ -258,11 +188,7 @@ function Home() {
                         Add Listing
                       </Link>
                     </li>
-                    <li className="nav-item">
-                      <Link to="/favorites" className="nav-link hover-effect">
-                        Favorites
-                      </Link>
-                    </li>
+
                     <li className="nav-item">
                       <button
                         onClick={handleLogout}
@@ -294,86 +220,15 @@ function Home() {
             </div>
           </div>
         </nav>
-
-        <header className="bg-pink text-white text-center py-5">
-          <div className="container">
-            <h1 className="display-4">Find Your Perfect Getaway</h1>
-            <p className="lead">
-              Explore unique stays and experiences around the world
-            </p>
-          </div>
-        </header>
-
-        <section className="container my-5 mb-5">
-          <h2 className="mb-4">Search for Your Stay</h2>
-          <form className="row g-3" onSubmit={(e) => e.preventDefault()}>
-            <div className="col-md-4">
-              <label htmlFor="destination" className="form-label">
-                Destination (Country)
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                id="destination"
-                placeholder="Enter country"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="col-md-3">
-              <label htmlFor="check-in" className="form-label">
-                Check-in
-              </label>
-              <input
-                type="date"
-                className="form-control"
-                id="check-in"
-                value={checkInDate}
-                min={today} // Disable past dates
-                onChange={handleCheckInChange} // Reset check-out date when check-in changes
-              />
-            </div>
-            <div className="col-md-3">
-              <label htmlFor="check-out" className="form-label">
-                Check-out
-              </label>
-              <input
-                type="date"
-                className="form-control"
-                id="check-out"
-                value={checkOutDate}
-                min={checkInDate || today} // Ensure check-out date is at least the check-in date
-                onChange={(e) => setCheckOutDate(e.target.value)}
-              />
-            </div>
-            <div className="col-md-2">
-              <label htmlFor="guests" className="form-label">
-                Guests
-              </label>
-              <input
-                type="number"
-                className="form-control"
-                id="guests"
-                min="1"
-                value={guests}
-                onChange={(e) => setGuests(e.target.value)}
-              />
-            </div>
-          </form>
-          <button className="btn btn-secondary mt-3" onClick={resetSearch}>
-            Reset Search
-          </button>
-        </section>
-
         <div className="container py-5">
-          <h2 className="mb-4">Featured Listings</h2>
+          <h2 className="mb-4">Favorites Listings</h2>
           <div className="row row-cols-1 row-cols-md-3 g-4">
-            {filteredListings.length === 0 ? (
+            {favoriteListings.length === 0 ? (
               <div className="col-12">
-                <p>No listings found.</p>
+                <p>No listings found in your favorites.</p>
               </div>
             ) : (
-              filteredListings.map((listing) => (
+              favoriteListings.map((listing) => (
                 <div className="col-lg-4 mb-4" key={listing.id}>
                   <div className="card h-100">
                     <img
@@ -424,6 +279,7 @@ function Home() {
           </div>
         </div>
       </div>
+
       <footer className="bg-light py-4">
         <div className="container text-center">
           <p>
@@ -435,4 +291,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default Favorites;

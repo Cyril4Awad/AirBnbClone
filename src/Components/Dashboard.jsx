@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Loading from "./Loading";
 import { BASE_URL } from "../api";
+import bcrypt from "bcryptjs";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -160,12 +161,21 @@ function Dashboard() {
     }
 
     try {
+      const hashedPassword = bcrypt.hashSync(newUserData.PasswordHash, 10);
+
+      const payload = {
+        FirstName: newUserData.FirstName,
+        LastName: newUserData.LastName,
+        Email: newUserData.Email,
+        PasswordHash: hashedPassword,
+        Role: Number(newUserData.Role),
+      };
       // Check if email already exists
       const res = await fetch(`${BASE_URL}/users`);
       const existingUsers = await res.json();
 
       const emailExists = existingUsers.some(
-        (u) => u.Email === newUserData.Email,
+        (u) => u.Email === payload.Email,
       );
 
       if (emailExists) {
@@ -177,16 +187,16 @@ function Dashboard() {
       await fetch(`${BASE_URL}/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUserData),
+        body: JSON.stringify(payload),
       });
 
       // Reset form and close modal
       setNewUserData({
-        fname: "",
-        lname: "",
-        email: "",
-        password: "",
-        role: 0,
+        FirstName: "",
+        LastName: "",
+        Email: "",
+        PasswordHash: "",
+        Role: 0,
       });
       setShowAddUser(false);
       fetchUsers();
@@ -207,6 +217,8 @@ function Dashboard() {
         method: "DELETE",
       });
       fetchUsers(); // refresh list
+      fetchBookings();
+      fetchListings();
       alert("User deleted successfully!");
     } catch (err) {
       console.error(err);
