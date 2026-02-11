@@ -27,7 +27,8 @@ function AddListing() {
     pricePerNight: "",
     cleaningFee: "",
 
-    imgUrl: "",
+    images: [],
+    // imgUrl: "",
 
     wifi: false,
     parking: false,
@@ -51,18 +52,21 @@ function AddListing() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Clear previous error
-      setErrors((prev) => ({ ...prev, imgUrl: "" }));
+  const handleImages = (e) => {
+    const files = Array.from(e.target.files);
+    const currentImages = formData.images;
 
+    if (currentImages.length + files.length > 5) {
+      alert("You can only upload up to 5 images.");
+      return;
+    }
+
+    files.forEach((file) => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       const img = new Image();
 
       img.onload = () => {
-        // Calculate new dimensions (max 800x600)
         let { width, height } = img;
         const maxWidth = 800;
         const maxHeight = 600;
@@ -83,14 +87,13 @@ function AddListing() {
         canvas.height = height;
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Start with high quality and reduce until size is acceptable
         let quality = 0.8;
         let compressedDataUrl;
         let attempts = 0;
 
         const compress = () => {
           compressedDataUrl = canvas.toDataURL("image/jpeg", quality);
-          const sizeInBytes = compressedDataUrl.length * 0.75; // Approximate base64 to bytes
+          const sizeInBytes = compressedDataUrl.length * 0.75;
 
           if (sizeInBytes > 90000 && quality > 0.1 && attempts < 10) {
             quality -= 0.1;
@@ -99,7 +102,7 @@ function AddListing() {
           } else {
             setFormData((prev) => ({
               ...prev,
-              imgUrl: compressedDataUrl,
+              images: [...prev.images, compressedDataUrl],
             }));
           }
         };
@@ -108,7 +111,7 @@ function AddListing() {
       };
 
       img.src = URL.createObjectURL(file);
-    }
+    });
   };
 
   const handleMapClick = (e) => {
@@ -164,8 +167,10 @@ function AddListing() {
     if (formData.cleaningFee < 0)
       validationErrors.cleaningFee = "Cleaning fee cannot be negative";
 
-    // Image
-    if (!formData.imgUrl.trim()) validationErrors.imgUrl = "Image is required";
+    // Image validation
+    if (!formData.images || formData.images.length === 0) {
+      validationErrors.images = "At least one image is required";
+    }
 
     // Coordinates
     if (formData.lat === null || formData.lng === null)
@@ -208,24 +213,26 @@ function AddListing() {
 
       console.log("Success result:", result);
       alert("Listing created successfully!");
-      if (formData.imgUrl) {
-        const imageResponse = await fetch(`${BASE_URL}/ListingImages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ListingId: listingId, // must match ListingId
-            ImageUrl: formData.imgUrl, // must match ImageUrl
-          }),
-        });
+      if (formData.images.length > 0) {
+        for (const img of formData.images) {
+          const imageResponse = await fetch(`${BASE_URL}/ListingImages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ListingId: listingId,
+              ImageUrl: img,
+            }),
+          });
 
-        if (!imageResponse.ok) {
-          const errorText = await imageResponse.text();
-          console.error("Failed to save listing image:", errorText);
-        } else {
-          console.log("Image saved successfully");
+          if (!imageResponse.ok) {
+            const errorText = await imageResponse.text();
+            console.error("Failed to save listing image:", errorText);
+          } else {
+            console.log("Image saved successfully");
+          }
         }
+        navigate("/listings");
       }
-      navigate("/listings");
     } catch (err) {
       console.error("Full error:", err);
       setErrors({ general: err.message || "Failed to create listing" });
@@ -836,23 +843,30 @@ function AddListing() {
                     <label className="form-label">Upload Image</label>
                     <input
                       type="file"
-                      className={`form-control ${errors.imgUrl ? "is-invalid" : ""}`}
-                      onChange={handleImage}
+                      className={`form-control ${errors.images ? "is-invalid" : ""}`}
+                      onChange={handleImages}
                       accept="image/*"
+                      multiple
                     />
-                    {errors.imgUrl && (
-                      <div className="invalid-feedback">{errors.imgUrl}</div>
+
+                    {errors.images && (
+                      <div className="invalid-feedback d-block">
+                        {errors.images}
+                      </div>
                     )}
                   </div>
 
-                  {formData.imgUrl && (
+                  {formData.images.length > 0 && (
                     <div className="mb-3 text-center">
-                      <img
-                        src={formData.imgUrl}
-                        alt="Preview"
-                        style={{ maxHeight: "200px", maxWidth: "100%" }}
-                        className="img-thumbnail"
-                      />
+                      {formData.images.map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt={`Preview ${idx + 1}`}
+                          style={{ maxHeight: "150px", margin: "5px" }}
+                          className="img-thumbnail"
+                        />
+                      ))}
                     </div>
                   )}
 

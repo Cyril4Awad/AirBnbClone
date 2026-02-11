@@ -362,15 +362,22 @@ function ViewListing() {
                   <span>{listing.size} m²</span>
                 </div>
 
-                <h5>Amenities</h5>
+              
                 <ul>
-                  {listing.wifi && <li>WiFi</li>}
-                  {listing.parking && <li>Parking</li>}
-                  {listing.airConditioning && <li>Air Conditioning</li>}
-                  {listing.kitchen && <li>Kitchen</li>}
+                  {listing.wifi && <li>WiFi Available</li>}
+                  {listing.parking && <li>Parking Available</li>}
+                  {listing.airConditioning && <li>Air Conditioning Available</li> }
+                  {listing.kitchen && <li>Kitchen Available</li>}
                 </ul>
 
                 <hr />
+
+                <p>
+                  <strong>Host phone number:</strong>{" "}
+                  {host
+                    ? `${host.countryCode || ""} ${host.phoneNumber || ""}`
+                    : "Loading..."}
+                </p>
 
                 {/* Listing Creation Date */}
                 <p>

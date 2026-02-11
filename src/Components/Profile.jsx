@@ -16,6 +16,7 @@ function Profile() {
     firstName: "",
     lastName: "",
     email: "",
+    countryCode: "",
     phoneNumber: "",
     passwordHash: "",
   });
@@ -33,6 +34,7 @@ function Profile() {
       firstName: loggedUser.firstName || "",
       lastName: loggedUser.lastName || "",
       email: loggedUser.email || "",
+      countryCode: loggedUser.countryCode || "",
       phoneNumber: loggedUser.phoneNumber || "",
       passwordHash: "",
     });
@@ -70,6 +72,7 @@ function Profile() {
       id: user.id,
       firstName: formData.firstName,
       lastName: formData.lastName,
+      countryCode: formData.countryCode,
       phoneNumber: formData.phoneNumber,
       email: formData.email,
       // Only include passwordHash if user typed a new password
@@ -220,7 +223,7 @@ function Profile() {
                   <strong>Email:</strong> {user.email}
                 </p>
                 <p>
-                  <strong>Phone:</strong> {user.phoneNumber}
+                  <strong>Phone:</strong> {user.countryCode} {user.phoneNumber}
                 </p>
 
                 <button
@@ -236,6 +239,7 @@ function Profile() {
                   "firstName",
                   "lastName",
                   "email",
+                  "countryCode",
                   "phoneNumber",
                   "passwordHash",
                 ].map((field) => (
@@ -272,6 +276,7 @@ function Profile() {
                         firstName: user.firstName,
                         lastName: user.lastName,
                         email: user.email,
+                        countryCode: user.countryCode,
                         phoneNumber: user.phoneNumber,
                         passwordHash: "",
                       });

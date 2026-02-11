@@ -16,6 +16,8 @@ function Dashboard() {
     FirstName: "",
     LastName: "",
     Email: "",
+    PhoneNumber: "",
+    CountryCode: "",
   });
 
   const [showAddUser, setShowAddUser] = useState(false);
@@ -25,6 +27,9 @@ function Dashboard() {
     Email: "",
     PasswordHash: "",
     Role: 0,
+    PhoneNumber: "",
+    CountryCode: "",
+    DateOfBirth: "",
   });
   useEffect(() => {
     // Check if user is logged in
@@ -161,22 +166,26 @@ function Dashboard() {
     }
 
     try {
+      let dateOfBirth = null;
+      if (newUserData.Age) {
+        const birthYear = new Date().getFullYear() - parseInt(newUserData.Age);
+        dateOfBirth = new Date(birthYear, 0, 1).toISOString(); // optional, store as ISO string
+      }
+
       const hashedPassword = bcrypt.hashSync(newUserData.PasswordHash, 10);
 
       const payload = {
-        FirstName: newUserData.FirstName,
-        LastName: newUserData.LastName,
-        Email: newUserData.Email,
+        ...newUserData,
+        DateOfBirth: dateOfBirth,
         PasswordHash: hashedPassword,
         Role: Number(newUserData.Role),
       };
+
       // Check if email already exists
       const res = await fetch(`${BASE_URL}/users`);
       const existingUsers = await res.json();
 
-      const emailExists = existingUsers.some(
-        (u) => u.Email === payload.Email,
-      );
+      const emailExists = existingUsers.some((u) => u.Email === payload.Email);
 
       if (emailExists) {
         setAddUserErrors({ email: "Email already exists" });
@@ -265,7 +274,7 @@ function Dashboard() {
   // ADMIN DASHBOARD ONLY
   return (
     <div className="min-vh-100 bg-light">
-      <nav className="navbar navbar-dark bg-danger shadow">
+      <nav className="navbar navbar-dark bg-pink shadow">
         <div className="container">
           <span className="navbar-brand">
             <i className="bi bi-shield-lock"></i> Admin Dashboard - Welcome,{" "}
@@ -401,6 +410,51 @@ function Dashboard() {
                 </div>
                 <div className="row">
                   <div className="col-md-6 mb-3">
+                    <label className="form-label">Country Code</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={newUserData.CountryCode}
+                      onChange={(e) =>
+                        setNewUserData({
+                          ...newUserData,
+                          CountryCode: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Phone Number</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={newUserData.PhoneNumber}
+                      onChange={(e) =>
+                        setNewUserData({
+                          ...newUserData,
+                          PhoneNumber: e.target.value,
+                        })
+                      }
+                      placeholder="1234567890"
+                    />
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Age</label>
+                    <input
+                    type="number"
+                      className="form-control"
+                      value={newUserData.Age}
+                      onChange={(e) =>
+                        setNewUserData({
+                          ...newUserData,
+                          Age: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
                     <label className="form-label">Select Role *</label>
                     <select
                       className="form-select"
@@ -427,6 +481,7 @@ function Dashboard() {
                         LastName: "",
                         Email: "",
                         PasswordHash: "",
+                        Age: "",
                         Role: 0,
                       });
 
@@ -452,6 +507,8 @@ function Dashboard() {
                     <th>First Name</th>
                     <th>Last Name</th>
                     <th>Email</th>
+                    <th>Country Code</th>
+                    <th>Phone Number</th>
                     <th>Role</th>
                     <th>Listings</th>
                     <th>Bookings</th>
@@ -511,6 +568,41 @@ function Dashboard() {
                           u.email
                         )}
                       </td>
+                      <td>
+                        {editingUser?.id === u.id ? (
+                          <input
+                            type="number"
+                            className="form-control form-control-sm mb-1"
+                            value={editFormData.CountryCode}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                CountryCode: e.target.value,
+                              })
+                            }
+                          />
+                        ) : (
+                          u.countryCode
+                        )}
+                      </td>
+                      <td>
+                        {editingUser?.id === u.id ? (
+                          <input
+                            type="number"
+                            className="form-control form-control-sm mb-1"
+                            value={editFormData.PhoneNumber}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                PhoneNumber: e.target.value,
+                              })
+                            }
+                          />
+                        ) : (
+                          u.phoneNumber
+                        )}
+                      </td>
+
                       <td>
                         <span
                           className={`badge ${
